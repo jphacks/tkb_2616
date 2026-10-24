@@ -5,7 +5,7 @@ import { GAMES, PEOPLE, PLATFORMS, VC, isGameTag, isTime, type PersonId } from '
 import { UNDECIDED, formatWhen, todayISO } from '../dates';
 import { DURATION_OPTIONS, durationLabel } from '../duration';
 import { DateTimeField } from '../DateTimeField';
-import { fakeSave, inviteText, newRecruitForm, useStore, type InviteParts, type RecStatus, type Request, type State } from '../store';
+import { fakeSave, inviteText, logJoin, newRecruitForm, useStore, type InviteParts, type RecStatus, type Request, type State } from '../store';
 import { createPendingSave } from '../pending-save';
 import { C, useLayout } from '../theme';
 import {
@@ -279,7 +279,13 @@ export function RequestsScreen() {
     update((d) => { const q = d.rec.requests.find((x) => x.id === id); if (q) q.busy = true; });
     await fakeSave();
     // 成立はサーバーで確定してから表示する（requests-4）
-    update((d) => { const q = d.rec.requests.find((x) => x.id === id); if (q) { q.busy = false; q.status = 'matched'; } });
+    update((d) => {
+      const q = d.rec.requests.find((x) => x.id === id);
+      if (!q) return;
+      q.busy = false; q.status = 'matched';
+      // 自分の募集に参加した人も、フレンドの知らせの参加履歴に残す
+      logJoin(d, { id: `rec:${q.id}`, side: 'rec', from: q.person, game: d.rec.form.game, when: formatWhen(d.rec.form.when, d.rec.form.time), result: 'matched' });
+    });
     const q = r.requests.find((x) => x.id === id);
     if (q) toast(`${PEOPLE[q.person].nickname}さんと成立しました`);
   };
@@ -326,7 +332,7 @@ export function RequestsScreen() {
   ) : (
     <Block title="参加希望" count={r.requests.length} right={<Note>合う順</Note>}>
       {r.requests.length ? r.requests.map((q) => (
-        <RequestRow key={q.id} q={q} canApprove={live && r.status !== 'closed'} showId={r.status !== 'canceled' && GAMES[f.game].join === 'id'} onApprove={() => approve(q.id)} />
+        <RequestRow key={q.id} q={q} canApprove={live && r.status !== 'closed'} showId={live} onApprove={() => approve(q.id)} />
       )) : <Card><Empty title="参加希望はまだ届いていません" text="招待状をSNSに貼ると、届きやすくなります。" /></Card>}
     </Block>
   );
@@ -339,7 +345,7 @@ export function RequestsScreen() {
   );
 }
 
-// 参加希望に出るのは、名前・合う理由・信頼の目安だけ（requests-2）。断るボタンは無い（requests-5）
+// 募集者は、名前・合う理由・信頼の目安と、入力されたゲーム内IDを承認前から確認できる。
 function RequestRow({ q, canApprove, showId, onApprove }: { q: Request; canApprove: boolean; showId: boolean; onApprove: () => void }) {
   const { copy } = useStore();
   const p = PEOPLE[q.person];
@@ -353,7 +359,7 @@ function RequestRow({ q, canApprove, showId, onApprove }: { q: Request; canAppro
           {q.status === 'matched' ? <Badge label="✓ 成立" tone="ok" />
             : <PillButton ok label={q.busy ? '承認中…' : '承認'} disabled={!canApprove || q.busy} onPress={onApprove} />}
         </Row>
-        {q.status === 'matched' && showId ? (
+        {showId && q.gameId ? (
           <InfoRow label="ゲーム内ID" value={q.gameId} action={<MiniButton label="コピー" onPress={() => copy(q.gameId, 'コピーしました')} />} />
         ) : null}
       </Stack>

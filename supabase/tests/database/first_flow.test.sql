@@ -98,7 +98,7 @@ grant select on c_app to anon, authenticated;
 
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
 select is((select count(*)::int from public.applications), 2, '募集する人には、届いた参加希望が見える');
-select is((select count(*)::int from public.application_game_ids), 0, '承認する前は、ニックネームのある参加者のゲーム内IDは見えない');
+select is((select count(*)::int from public.application_game_ids), 2, '承認前でも、募集者には参加者のゲーム内IDが見える');
 select is(
   (select count(*)::int from public.notifications where kind = '参加希望が届いた'),
   2, '参加希望が届くと、募集する人に知らせが届く（app-17）');

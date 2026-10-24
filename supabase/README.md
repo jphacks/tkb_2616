@@ -31,7 +31,7 @@ npx supabase test db
 | `recruitments` 募集 | だれでも（ログインしていない人も） | `status`（募集の状態）、`matched_count`（成立人数） |
 | `recruitment_meetings` 入る場所・招待URL | 募集する人と成立した相手。開催中止・遊び終了の後は誰も読めない | |
 | `applications` 参加希望 | 参加する本人と、その募集の募集する人 | `state`（参加希望の状態） |
-| `application_game_ids` 参加者のゲーム内ID | 本人と、募集する人。募集する人に見えるのは、成立した人の分と、承認待ちでニックネームの無い人の分（届いた参加希望で名前として出す。requests-3）。開催中止・遊び終了の後は誰も読めない | |
+| `application_game_ids` 参加者のゲーム内ID | 本人と、募集する人。募集する人には、承認待ちと成立した人の分を渡す。開催中止・遊び終了の後は誰も読めない | |
 | `notifications` 知らせ | 宛先の本人 | |
 | `profiles`・`games` | だれでも。`games` の `modes`（そのゲームでよく使う条件）と `needs_participant_id_default`（参加する人のIDが要るかの初期値）は、中身を作ったゲームだけが持つ（server-10）。null なら、モードの欄を出さない（recruit-15） | |
 
@@ -114,7 +114,7 @@ supabase
 | 開催中止・遊び終了の後は、受付終了・進行の操作で何も変えない | server-96 | requests-12 |
 | 募集は、ログインしていない人も読める | server-19、server-54 | list-1、list-9 |
 | 募集人数は、空欄か1以上の整数 | server-66 | recruit-13 |
-| ゲーム内IDは成立した相手との間だけ（server-28）だが、承認待ちでニックネームの無い人の分は、名前として募集する人に渡す | server-28 と食い違う | requests-3 |
+| ゲーム内IDは、ユーザー指示に合わせて承認待ちの段階から募集する人へ渡す | server-28 と食い違う | requests-3 |
 
 ## クラウドに当てる
 
