@@ -137,6 +137,7 @@ export type Listing = {
   by: PersonId;
   game: GameTag;
   when: string;
+  durationMinutes?: number | null;
   need: number;
   platform: string;
   vc: string;

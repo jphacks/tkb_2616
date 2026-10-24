@@ -4,6 +4,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { ENDED_LISTINGS, GAMES, LISTINGS, PEOPLE, checkGameId, type Listing } from '../data';
 import { fakeSave, findListing, newRecruitForm, useStore } from '../store';
 import { C, useLayout } from '../theme';
+import { durationLabel } from '../duration';
 import {
   AppBar, Art, Avatar, Badge, Block, Card, Check, DemoButton, Divider, Empty, Field, Grid, HeatTag, MainButton,
   MiniButton, Note, PillButton, Reasons, RightsNote, Row, Stack, SubButton, TextButton, Trust, Txt,
@@ -82,6 +83,7 @@ function ListingCard({ l, pinned }: { l: Listing; pinned?: boolean }) {
           <Note>{l.via}</Note>
         </Row>
         <Txt size={17} weight="bold">{l.when} ・ あと{l.need}人</Txt>
+        <Note>遊ぶ目安：{durationLabel(l.durationMinutes)}</Note>
         {/* 各募集に、募集の内容と信頼の目安が出る（list-9） */}
         <Row gap={10} wrap><Note>{l.platform}</Note><Note>VC{l.vc}</Note><Note>実力 {l.skill}</Note><HeatTag value={l.heat} /></Row>
         <Reasons items={l.reasons} />
@@ -123,7 +125,7 @@ function EndedCard({ l }: { l: Listing }) {
     <Card pad style={{ opacity: 0.8 }}>
       <Stack gap={8}>
         <Row gap={10}><Avatar p={p} small /><Txt size={15} weight="bold" style={{ flex: 1 }}>{p.nickname}</Txt><Badge label="終了" tone="rest" /></Row>
-        <Row gap={10} wrap><Note>{l.when}</Note><Note>{l.platform}</Note><HeatTag value={l.heat} /></Row>
+        <Row gap={10} wrap><Note>{l.when}</Note><Note>{durationLabel(l.durationMinutes)}</Note><Note>{l.platform}</Note><HeatTag value={l.heat} /></Row>
         <Row style={{ justifyContent: 'space-between' }}>
           <Trust value={p.trust} />
           <PillButton label={sent ? '申請済み' : 'フレンド申請'} disabled={sent}
@@ -148,7 +150,7 @@ export function MatchedScreen() {
   const head = (
     <Card pad>
       <Row gap={10}><Art tag={l.game} />
-        <Stack gap={2}><Txt size={16} weight="bold">{game.name}</Txt><Note>{p.nickname}の募集 ・ {l.when}</Note></Stack></Row>
+        <Stack gap={2}><Txt size={16} weight="bold">{game.name}</Txt><Note>{p.nickname}の募集 ・ {l.when}</Note><Note>遊ぶ目安：{durationLabel(l.durationMinutes)}</Note></Stack></Row>
     </Card>
   );
 

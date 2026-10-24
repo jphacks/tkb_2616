@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createProfileRepository } from './profile-storage';
 import * as Clipboard from 'expo-clipboard';
 import { formatWhen, todayISO } from './dates';
+import { durationLabel } from './duration';
 import { clearSaved, loadSaved, saveState } from './saved';
 import {
   GAMES, HEAT, LISTINGS, ME, SAMPLE_REQUESTS,
@@ -28,6 +29,7 @@ export type RecruitForm = {
   game: GameTag;
   when: string;
   time: string;
+  durationMinutes?: number | null;
   need: number;
   platform: string;
   vc: string;
@@ -35,7 +37,7 @@ export type RecruitForm = {
   skill: number;
   saveToProfile: boolean;
 };
-export type InviteParts = Record<'when' | 'need' | 'platform' | 'vc' | 'skill' | 'heat', boolean>;
+export type InviteParts = Record<'when' | 'need' | 'platform' | 'vc' | 'skill' | 'heat', boolean> & { duration?: boolean };
 export type RecStatus = 'open' | 'closed' | 'playing' | 'ended' | 'canceled';
 export type Request = {
   id: string; person: PersonId; gameId: string; via: string; reasons: string[];
@@ -92,7 +94,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 export function newRecruitForm(tag: GameTag, games: MyGame[] = ME.games): RecruitForm {
   const g = games.find((x) => x.tag === tag);
   return {
-    game: tag, when: todayISO(), time: '21:00', need: 3,
+    game: tag, when: todayISO(), time: '21:00', durationMinutes: null, need: 3,
     platform: g ? g.platform : 'Switch', vc: 'あり',
     heat: g ? g.heat : 2, skill: g ? g.skill : 5, saveToProfile: false,
   };
@@ -110,7 +112,7 @@ function freshState(route: Route = { name: 'profile' }): State {
       stage: 'draft',
       form: newRecruitForm('apex'),
       saved: null,
-      parts: { when: true, need: true, platform: true, vc: true, skill: true, heat: true },
+      parts: { when: true, duration: true, need: true, platform: true, vc: true, skill: true, heat: true },
       status: 'open',
       room: '', inviteUrl: '', roomDraft: '', inviteDraft: '',
       editing: false,
@@ -373,6 +375,7 @@ export function inviteText(f: RecruitForm, parts: InviteParts) {
   const lines = [`【${name}】一緒に遊べる人募集！`];
   const detail: string[] = [];
   if (parts.when) detail.push(formatWhen(f.when, f.time));
+  if (parts.duration !== false && f.durationMinutes != null) detail.push(durationLabel(f.durationMinutes));
   if (parts.need) detail.push(`あと${f.need}人`);
   if (detail.length) lines.push(detail.join(' ・ '));
   const cond: string[] = [];

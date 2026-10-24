@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { GAMES, PEOPLE, PLATFORMS, VC, isGameTag, isTime, type PersonId } from '../data';
 import { UNDECIDED, formatWhen, todayISO } from '../dates';
+import { DURATION_OPTIONS, durationLabel } from '../duration';
 import { DateTimeField } from '../DateTimeField';
 import { fakeSave, inviteText, newRecruitForm, useStore, type InviteParts, type RecStatus, type Request, type State } from '../store';
 import { createPendingSave } from '../pending-save';
@@ -24,7 +25,7 @@ function FormRow({ label, children }: { label: string; children: React.ReactNode
 
 /* ---------- 募集を出す ---------- */
 
-const PARTS: [keyof InviteParts, string][] = [['when', 'いつ'], ['need', '人数'], ['platform', '機種'], ['vc', 'VC'], ['skill', '実力'], ['heat', '熱量']];
+const PARTS: [keyof InviteParts, string][] = [['when', 'いつ'], ['duration', '遊ぶ目安'], ['need', '人数'], ['platform', '機種'], ['vc', 'VC'], ['skill', '実力'], ['heat', '熱量']];
 
 // 新しい募集の下書きにする。前の募集の内容・参加希望・入る場所は持ち越さない
 function startDraft(d: State, game: State['rec']['form']['game']) {
@@ -143,6 +144,15 @@ export function CreateScreen({ game }: { game?: string }) {
         {f.when !== UNDECIDED ? <Note>{formatWhen(f.when, f.time)}</Note> : null}
       </FormRow>
       <Divider />
+      <FormRow label="遊ぶ目安">
+        <Row gap={6} wrap>
+          {DURATION_OPTIONS.map(option => <Opt key={String(option.minutes)} label={option.label}
+            on={(f.durationMinutes ?? null) === option.minutes}
+            onPress={() => setForm(x => { x.durationMinutes = option.minutes; })} />)}
+        </Row>
+        <Note>だいたいでOK。参加する人に、どのくらい遊ぶ予定か伝えます。</Note>
+      </FormRow>
+      <Divider />
       <FormRow label="人数">
         <Row gap={10}>
           <SubButton label="−" onPress={() => setForm((x) => { x.need = Math.max(1, x.need - 1); })} />
@@ -194,7 +204,7 @@ export function CreateScreen({ game }: { game?: string }) {
           <Row gap={6} wrap style={{ padding: s(12), paddingBottom: s(8) }}>
             <Txt size={12} weight="bold" color={C.muted}>載せる項目</Txt>
             {/* 載せる項目のオン・オフで、招待状のその項目が出る・消える（recruit-3） */}
-            {PARTS.map(([k, label]) => <Opt key={k} label={label} on={r.parts[k]} onPress={() => update((d) => { d.rec.parts[k] = !d.rec.parts[k]; })} />)}
+            {PARTS.map(([k, label]) => <Opt key={k} label={label} on={r.parts[k] !== false} onPress={() => update((d) => { d.rec.parts[k] = !(d.rec.parts[k] !== false); })} />)}
           </Row>
           <View style={{ margin: s(12), marginTop: 0, padding: s(12), borderRadius: s(10), backgroundColor: C.bg }}>
             <Txt size={13}>{invite}</Txt>
@@ -280,7 +290,7 @@ export function RequestsScreen() {
         <Art tag={f.game} />
         <Stack gap={2} style={{ flex: 1 }}>
           <Txt size={16} weight="bold">{GAMES[f.game].name}</Txt>
-          <Note>{formatWhen(f.when, f.time)} ・ あと{f.need}人 ・ 成立 {matched.length}人</Note>
+          <Note>{formatWhen(f.when, f.time)} ・ {durationLabel(f.durationMinutes)} ・ あと{f.need}人 ・ 成立 {matched.length}人</Note>
         </Stack>
         <Badge label={label} tone={tone} />
       </Row>
