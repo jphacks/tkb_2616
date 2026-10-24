@@ -1,5 +1,7 @@
 // フレンド：届いた申請、相手の知らせ、フレンド
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { inviteRemainingSeconds } from '../friend-invites';
 import Feather from '@expo/vector-icons/Feather';
 import { GAMES, PEOPLE } from '../data';
 import { useStore } from '../store';
@@ -10,10 +12,22 @@ import {
 } from '../ui';
 
 export function ConnectionsScreen() {
-  const { s: st, update, go, toast, confirm } = useStore();
+  const { s: st, update, go, toast, confirm, inviteFriend } = useStore();
   const { s } = useLayout();
   const c = st.conn;
   const me = st.me;
+  const [now, setNow] = useState(Date.now);
+  const remaining = (id: string) => inviteRemainingSeconds(c.inviteSentAt[id as keyof typeof c.inviteSentAt], now);
+  useEffect(() => {
+    const sent = Object.values(c.inviteSentAt);
+    if (!sent.some(at => inviteRemainingSeconds(at, Date.now()) > 0)) return;
+    const timer = setInterval(() => {
+      const time = Date.now();
+      setNow(time);
+      if (!sent.some(at => inviteRemainingSeconds(at, time) > 0)) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [c.inviteSentAt]);
 
   const incoming = (
     <Block title="届いた申請" count={c.incoming.length}>
@@ -51,6 +65,7 @@ export function ConnectionsScreen() {
       <Card>
         {c.notices.length ? c.notices.map((n, i) => {
           const p = PEOPLE[n.from];
+          const wait = remaining(n.from);
           const recruit = n.kind === 'recruit';
           return (
             <View key={i}>
@@ -67,9 +82,13 @@ export function ConnectionsScreen() {
                 </Stack>
                 {/* 相手の募集の知らせから参加希望を送れる（app-19）、熱量の知らせからそのゲームで誘える（app-21） */}
                 <PillButton
-                  label={n.done ? (recruit ? '参加リクエスト済み' : '誘いました') : (recruit ? '参加希望を送る' : 'このゲームで誘う')}
-                  disabled={n.done}
-                  onPress={() => { update((d) => { d.conn.notices[i].done = true; }); toast(recruit ? '参加希望を送りました' : '誘いました'); }} />
+                  label={recruit ? (n.done ? '参加リクエスト済み' : '参加希望を送る') : wait > 0 ? `誘いました（あと${wait}秒）` : n.done ? 'もう一度誘う' : 'このゲームで誘う'}
+                  disabled={recruit ? n.done : wait > 0}
+                  onPress={() => {
+                    if (!recruit) { inviteFriend(n.from, n.game); return; }
+                    update(d => { d.conn.notices[i].done = true; });
+                    toast('参加希望を送りました');
+                  }} />
               </Row>
             </View>
           );
@@ -82,6 +101,7 @@ export function ConnectionsScreen() {
     <Block title="フレンド" count={c.friends.length}>
       {c.friends.length ? c.friends.map((id) => {
         const p = PEOPLE[id];
+        const wait = remaining(id);
         const common = p.games.filter((g) => me.games.some((m) => m.tag === g.tag));
         return (
           <Card pad key={id}>
@@ -108,8 +128,8 @@ export function ConnectionsScreen() {
                   update((d) => { d.conn.friends = d.conn.friends.filter((x) => x !== id); });
                 }} />
                 {/* 両方が持っているゲームで誘う（connections-8） */}
-                {common.length ? <PillButton label={`${GAMES[common[0].tag].name}で誘う`}
-                  onPress={() => toast(`${p.nickname}さんを${GAMES[common[0].tag].name}に誘いました`)} /> : null}
+                {common.length ? <PillButton label={wait > 0 ? `誘いました（あと${wait}秒）` : `${GAMES[common[0].tag].name}で誘う`}
+                  disabled={wait > 0} onPress={() => inviteFriend(id, common[0].tag)} /> : null}
               </Row>
             </Stack>
           </Card>
@@ -121,6 +141,7 @@ export function ConnectionsScreen() {
   return (
     <Stack>
       <AppBar title="フレンド" />
+      <Note>同じ相手をもう一度誘うときは、30秒ほど間を空けてください。</Note>
       <Cols even left={<>{incoming}{notices}</>} right={friends} />
     </Stack>
   );

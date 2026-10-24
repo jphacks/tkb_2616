@@ -6,9 +6,10 @@ import { createProfileRepository } from './profile-storage';
 import * as Clipboard from 'expo-clipboard';
 import { formatWhen, todayISO } from './dates';
 import { durationLabel } from './duration';
+import { createFriendInviteGuard } from './friend-invites';
 import { clearSaved, loadSaved, saveState } from './saved';
 import {
-  GAMES, HEAT, LISTINGS, ME, SAMPLE_REQUESTS,
+  GAMES, HEAT, LISTINGS, ME, PEOPLE, SAMPLE_REQUESTS,
   type GameTag, type MyGame, type PersonId, type Profile,
 } from './data';
 
@@ -86,6 +87,7 @@ export type State = {
     notices: Notice[];
     friends: PersonId[];
     sentTo: PersonId[];
+    inviteSentAt: Partial<Record<PersonId, number>>;
   };
 };
 
@@ -132,6 +134,7 @@ function freshState(route: Route = { name: 'profile' }): State {
       ],
       friends: ['mei', 'ken'],
       sentTo: [],
+      inviteSentAt: {},
     },
   };
 }
@@ -176,6 +179,7 @@ type Store = {
   reset: () => Promise<boolean>;
   editProfile: (change: (profile: Profile) => void) => Promise<boolean>;
   saveGameToProfile: (f: Pick<RecruitForm, 'game' | 'platform' | 'heat' | 'skill'>) => Promise<boolean>;
+  inviteFriend: (person: PersonId, game: GameTag) => boolean;
   publish: (via: 'x' | 'threads' | 'line' | 'copy' | 'none') => Promise<void>;
 };
 
@@ -190,6 +194,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   });
   const restored = useRef(initial.restored);
   const [s, setS] = useState<State>(initial.state);
+  const [inviteGuard] = useState(() => createFriendInviteGuard(initial.state.conn.inviteSentAt));
   const [profiles] = useState(() => createProfileRepository(AsyncStorage));
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -304,6 +309,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       await profiles.reset();
       clearSaved();
+      inviteGuard.reset();
       restored.current = false;
       setS(freshState());
       setReady(true);
@@ -315,7 +321,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast('保存内容を消せませんでした。もう一度お試しください');
       return false;
     }
-  }, [profiles, toast]);
+  }, [profiles, toast, inviteGuard]);
 
   const saveGameToProfile = useCallback((f: Pick<RecruitForm, 'game' | 'platform' | 'heat' | 'skill'>) => {
     return editProfile(profile => {
@@ -325,6 +331,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       else profile.games.push({ tag: f.game, ...values });
     });
   }, [editProfile]);
+
+  const inviteFriend = useCallback((person: PersonId, game: GameTag) => {
+    const sentAt = Date.now();
+    if (!inviteGuard.tryInvite(person, sentAt)) return false;
+    update(d => {
+      d.conn.inviteSentAt[person] = sentAt;
+      for (const notice of d.conn.notices) {
+        if (notice.kind === 'heat' && notice.from === person) notice.done = true;
+      }
+    });
+    toast(`${PEOPLE[person].nickname}さんを${GAMES[game].name}に誘いました`);
+    return true;
+  }, [inviteGuard, update, toast]);
 
   const publish = useCallback(async (via: 'x' | 'threads' | 'line' | 'copy' | 'none') => {
     const text = inviteText(s.rec.form, s.rec.parts);
@@ -351,8 +370,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [s.rec.form, s.rec.parts, toast, update, open, copy, go, saveGameToProfile]);
 
   const value = useMemo<Store>(() => ({
-    s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, publish,
-  }), [s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, publish]);
+    s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, inviteFriend, publish,
+  }), [s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, inviteFriend, publish]);
 
   if (!ready) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16, backgroundColor: '#fff9e9' }}>
     <Text>{loadError ? '保存したプロフィールを読み込めませんでした。保存内容は上書きしていません。' : '保存したプロフィールを読み込んでいます…'}</Text>
