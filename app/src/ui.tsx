@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { GAMES, HEAT, SKILLS, type GameTag, type Person, type Profile } from './data';
 import { C, F, shadow, useLayout } from './theme';
 import { DEMO_COVERS } from './demo-covers';
+import { SliderControl } from './SliderControl';
 
 /* ---------- 文字 ---------- */
 
@@ -305,37 +306,28 @@ export function Empty({ title, text, button }: { title: string; text: string; bu
   );
 }
 
-/* ---------- 段階を選ぶスライダー ---------- */
+/* ---------- ドラッグでなめらかに動かすスライダー ---------- */
 
-// 表示は細いバー、編集時だけつまみを出す。段階ごとのタップ・キーボード選択を保つ。
+// ドラッグ中は連続値で動かし、操作が終わったときだけ保存する段階を確定する。
 function StepSlider({ count, value, color, onChange, startLabel, endLabel, label, valueText }: {
   count: number; value: number; color: string; onChange?: (v: number) => void;
   startLabel: string; endLabel: string; label: string; valueText: string;
 }) {
   const { s } = useLayout();
   const fraction = Math.max(0, Math.min(count - 1, value)) / (count - 1);
-  const position = `${fraction * 100}%` as const;
-  return (
-    <Row gap={8}>
-      <Txt size={11} color={C.muted} style={{ width: s(34) }}>{startLabel}</Txt>
-      <View style={{ flex: 1, height: s(onChange ? 36 : 14), justifyContent: 'center' }}
-        accessible={!onChange} accessibilityRole={onChange ? 'radiogroup' : 'text'}
-        accessibilityLabel={onChange ? label : `${label}：${valueText}`}>
-        <View pointerEvents="none" style={{ position: 'absolute', left: onChange ? `${50 / count}%` : 0, right: onChange ? `${50 / count}%` : 0, height: s(4), borderRadius: s(2), backgroundColor: C.line }}>
-          <View style={{ width: position, height: '100%', borderRadius: s(2), backgroundColor: color }} />
-          {onChange ? <View style={{ position: 'absolute', left: position, top: s(-6), marginLeft: s(-8), width: s(16), height: s(16), borderRadius: s(8), borderWidth: 2, borderColor: color, backgroundColor: C.card }} /> : null}
+  return <Row gap={8}>
+    <Txt size={11} color={C.muted} style={{ width: s(34) }}>{startLabel}</Txt>
+    {onChange ? <SliderControl value={value} max={count - 1} color={color} trackColor={C.line}
+      label={label} valueText={valueText} height={s(40)} onChange={onChange} /> : (
+      <View accessible accessibilityRole="text" accessibilityLabel={`${label}：${valueText}`}
+        style={{ flex: 1, height: s(14), justifyContent: 'center' }}>
+        <View style={{ height: s(4), borderRadius: s(2), backgroundColor: C.line }}>
+          <View style={{ width: `${fraction * 100}%`, height: '100%', borderRadius: s(2), backgroundColor: color }} />
         </View>
-        {onChange ? <View style={{ flexDirection: 'row', height: '100%' }}>
-          {Array.from({ length: count }, (_, i) => (
-            <Pressable key={i} onPress={() => onChange(i)} accessibilityRole="radio"
-              accessibilityLabel={`${label}：${label === '熱量' ? HEAT[i] : i + 1}`} accessibilityState={{ checked: i === value }}
-              style={({ pressed }) => ({ flex: 1, height: '100%', borderRadius: s(4), backgroundColor: pressed ? C.accentSoft : 'transparent' })} />
-          ))}
-        </View> : null}
       </View>
-      <Txt size={11} color={C.muted} style={{ width: s(34), textAlign: 'right' }}>{endLabel}</Txt>
-    </Row>
-  );
+    )}
+    <Txt size={11} color={C.muted} style={{ width: s(34), textAlign: 'right' }}>{endLabel}</Txt>
+  </Row>;
 }
 
 // 熱量のスライダーは、ゆるい→ガチの順に並ぶ（profile-5）
