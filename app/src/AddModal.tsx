@@ -1,9 +1,12 @@
 // ゲーム・趣味・好きなものを足すモーダル。
 // 欄に打つと候補が絞り込まれて下に出る（家計簿の「店舗を選択」と同じ形）。
 // 候補を押すとそれを足し、右の「新規追加」を押すと、候補が出ていても打った名前をそのまま足す。
-import { useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
-import { GAMES, HOBBY_SUGGEST, LIKE_SUGGEST, addCustomGame, hasNgWord } from './data';
+import { GAMES, HOBBY_SUGGEST, LIKE_SUGGEST, addCustomGame, registerIgdbGame, hasNgWord } from './data';
+import { GameCatalogContext } from './GameCatalog';
+import { GamePicker } from './GamePicker';
+import type { GameCandidate } from '../../packages/integrations/src/igdb';
 import { FitModal, useFitHeight } from './FitModal';
 import { useStore } from './store';
 import { C, F, shadow, useLayout } from './theme';
@@ -140,6 +143,7 @@ export function AddModal({ kind, onClose }: { kind: AddKind | null; onClose: () 
   const { s } = useLayout();
   // 足せなかった理由は、モーダルの中に出す（下の知らせはモーダルに隠れるため）
   const [error, setError] = useState('');
+  const catalog = useContext(GameCatalogContext);
   if (!kind) return null;
   const close = () => { setError(''); onClose(); };
 
@@ -162,12 +166,12 @@ export function AddModal({ kind, onClose }: { kind: AddKind | null; onClose: () 
         key: n, label: n, added: named.some((x) => x.name === n), custom: !suggest.includes(n),
       }));
 
-  const add = async (name: string, tag?: string) => {
+  const add = async (name: string, tag?: string, candidate?: GameCandidate) => {
     if (hasNgWord(name)) return setError('この言葉は入れられません');
     if (kind === 'games') {
-      const t = tag ?? addCustomGame(name);
+      const t = candidate ? registerIgdbGame(candidate) : tag ?? addCustomGame(name);
       if (target.games.some((g) => g.tag === t)) return setError(`${GAMES[t].name}はもう入っています`);
-      if (!(await edit((p) => { if (!p.games.some(g => g.tag === t)) p.games.push({ demo: false, tag: t, platform: 'Switch', heat: 2, skill: 5 }); }))) return;
+      if (!(await edit((p) => { if (!p.games.some(g => g.tag === t)) p.games.push({ demo: false, tag: t, platform: candidate ? 'その他' : 'Switch', heat: 2, skill: 5, ...(t.startsWith('igdb:') ? { igdb: { id: Number(t.slice(5)), name: GAMES[t].name } } : {}) }); }))) return;
       toast(`${GAMES[t].name}を追加しました`);
     } else {
       const list = kind === 'hobbies' ? target.hobbies : target.likes;
@@ -186,6 +190,8 @@ export function AddModal({ kind, onClose }: { kind: AddKind | null; onClose: () 
     // 画面の高さに合わせて縮み、見出しと閉じるボタンは常に見える（FitModal）
     <FitModal title={TITLE[kind]} onClose={close} footer={<SubButton label="閉じる" onPress={close} style={{ alignSelf: 'flex-end' }} />}>
           <Stack gap={12}>
+            {kind === 'games' && catalog ? <GamePicker catalog={catalog}
+              onPick={game => add(game.name, undefined, game)} onCreate={name => add(name)} /> : <>
             <Note>候補から選ぶか、名前を打って「新規追加」を押してください。</Note>
             <Combobox
               items={items}
@@ -194,6 +200,7 @@ export function AddModal({ kind, onClose }: { kind: AddKind | null; onClose: () 
               onCreate={(name) => add(name)}
               onType={() => setError('')}
             />
+            </>}
             {error ? <Txt size={13} weight="bold" color={C.danger}>{error}</Txt> : null}
             {added.length ? (
               <Stack gap={6}>

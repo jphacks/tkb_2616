@@ -7,6 +7,7 @@ import { liveScreens } from '../live/screens';
 import { SteamProfileSync } from '../local/SteamProfileSync';
 import { SteamPreview } from '../local/SteamPreview';
 import { ownSteamLibrary } from '../lib/own-steam';
+import { cloudGameCatalog, localGameCatalog } from '../lib/profile-game-catalog';
 import { cloudProfileCovers, localProfileCovers } from '../lib/profile-covers';
 import { useLocalIntegrations } from '../local/useLocalIntegrations';
 
@@ -41,6 +42,7 @@ export default function Home() {
   // remains an error on the real screen; it must never look like a successful demo write.
   return <ShumitomoApp
     key={configured ? account.userId ?? 'guest' : 'local'}
+    gameCatalog={configured ? cloudGameCatalog : local ? localGameCatalog : undefined}
     readProfileCovers={configured ? cloudProfileCovers : local ? localProfileCovers : undefined}
     profileStorageKey={configured ? `shumitomo.profile.v1:${account.userId ?? 'guest'}` : undefined}
     integration={configured ? (account.userId ? CloudSteamProfileSync : undefined) : local ? SteamProfileSync : undefined}

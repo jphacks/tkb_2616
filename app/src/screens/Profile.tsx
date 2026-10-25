@@ -1,3 +1,4 @@
+import { useIgdbProfileCovers } from '../IgdbProfileCovers';
 // プロフィール：自分のプロフィール、編集、他の人のプロフィール、IDで探す
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Pressable, View } from 'react-native';
@@ -32,6 +33,7 @@ function ProfileView() {
   const { wide, s, design } = useLayout();
   const p = st.me;
   const { covers, failed: coversFailed, retry: retryCovers } = useProfileCovers(p.games);
+  const igdb = useIgdbProfileCovers(p.games);
   const actionPending = useRef(false);
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState<{ kind: AddKind; key: string; name: string } | null>(null);
@@ -144,14 +146,14 @@ function ProfileView() {
         </View>
       </Card>
       {p.games.some(game => game.steam?.appId) ? <Note>Steamの実力・熱量は初期値から変更できます。</Note> : null}
-      {coversFailed ? <Stack gap={4}>
+      {coversFailed || igdb.failed ? <Stack gap={4}>
         <Note>ゲーム画像を取得できませんでした。ゲームとプレイ時間はそのまま表示しています。</Note>
-        <TextButton label="ゲーム画像を再取得" onPress={retryCovers} />
+        <TextButton label="ゲーム画像を再取得" onPress={() => { retryCovers(); igdb.retry(); }} />
       </Stack> : null}
-      {covers.length > 0 ? <TextButton label="ゲーム画像：IGDB.com" onPress={() => open('https://www.igdb.com/')} /> : null}
+      {covers.length > 0 || Object.keys(igdb.covers).length > 0 ? <TextButton label="ゲーム画像：IGDB.com" onPress={() => open('https://www.igdb.com/')} /> : null}
       <Block title="ゲーム" count={p.games.length} right={<MiniButton label="＋ 追加" onPress={() => setAdding('games')} />}>
         {p.games.length ? <Stack gap={10}>{p.games.map((g) => (
-          <GameCard key={g.tag} g={g} coverUrl={covers.find(cover => cover.appId === g.steam?.appId)?.imageUrl} showSteam={g.steam?.appId ? settings.steamShow.games : steamProfileVisible(settings)}
+          <GameCard key={g.tag} g={g} coverUrl={g.igdb ? igdb.covers[g.igdb.id] : covers.find(cover => cover.appId === g.steam?.appId)?.imageUrl} showSteam={g.steam?.appId ? settings.steamShow.games : steamProfileVisible(settings)}
             onRecruit={() => { update((d) => { d.role = 'rec'; }); go('create', { game: g.tag }); }}
             onSkill={(v) => setGame(g.tag, 'skill', v)}
             onHeat={(v) => setGame(g.tag, 'heat', v)}

@@ -10,6 +10,8 @@ import { DelaGothicOne_400Regular } from '@expo-google-fonts/dela-gothic-one/400
 import { ZenKakuGothicNew_400Regular } from '@expo-google-fonts/zen-kaku-gothic-new/400Regular';
 import { ZenKakuGothicNew_700Bold } from '@expo-google-fonts/zen-kaku-gothic-new/700Bold';
 import { ROUTE_TAB, StoreProvider, resolveRoute, useStore, type Tab } from './src/store';
+import { GameCatalogContext } from './src/GameCatalog';
+import type { GameCatalog } from './src/game-catalog';
 import { ProfileCoverReader } from './src/ProfileCovers';
 import type { ReadProfileCovers } from './src/profile-game-covers';
 import { C, useLayout } from './src/theme';
@@ -30,7 +32,7 @@ export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'li
 
 type ScreenOptions = { settingsScreen: ComponentType; liveScreens?: LiveScreens; modeLabel?: string };
 
-export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey, readProfileCovers }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string; readProfileCovers?: ReadProfileCovers }) {
+export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey, readProfileCovers, gameCatalog }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string; readProfileCovers?: ReadProfileCovers; gameCatalog?: GameCatalog }) {
   const { design } = useLayout();
   const [loaded] = useFonts({
     DelaGothicOne_400Regular,
@@ -41,6 +43,7 @@ export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, mod
   if (!loaded && Platform.OS !== 'web') return <View style={{ flex: 1, backgroundColor: C.bg }} />;
   return (
     <SafeAreaProvider>
+      <GameCatalogContext.Provider value={gameCatalog}>
       <ProfileCoverReader.Provider value={readProfileCovers}>
         <StoreProvider profileStorageKey={profileStorageKey}>
           {Integration ? <Integration /> : null}
@@ -48,6 +51,7 @@ export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, mod
           <StatusBar style={design.dark ? 'light' : 'dark'} />
         </StoreProvider>
       </ProfileCoverReader.Provider>
+      </GameCatalogContext.Provider>
     </SafeAreaProvider>
   );
 }

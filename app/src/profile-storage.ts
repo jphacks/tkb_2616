@@ -1,4 +1,4 @@
-import { GAMES, ME, addCustomGame, type Profile } from './data.ts';
+import { GAMES, ME, addCustomGame, registerIgdbGame, type Profile } from './data.ts';
 
 // デモ専用の端末内データ。ログイン情報や他の画面の下書きは保存しない。
 export const PROFILE_STORAGE_KEY = 'shumitomo.demo.profile.v1';
@@ -11,13 +11,15 @@ const copy = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string';
 const steamTag = (tag: string, value: unknown) => /^steam:[1-9][0-9]*$/.test(tag) && object(value) && Number.isSafeInteger(value.appId) && value.appId === Number(tag.slice(6)) && text(value.name) && value.name.length > 0;
+const igdbTag = (tag: string, value: unknown) => /^igdb:[1-9][0-9]*$/.test(tag) && object(value) && Number.isSafeInteger(value.id) && value.id === Number(tag.slice(5)) && text(value.name) && value.name.length > 0;
 const level = (value: unknown, min: number, max: number) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
 function isProfile(value: unknown): value is Profile {
   if (!object(value)) return false;
   return ['nickname', 'appId', 'color', 'region'].every(key => text(value[key]))
     && object(value.times) && text(value.times.start) && text(value.times.end)
     && Array.isArray(value.games) && value.games.every(game => object(game) && text(game.tag)
-      && (game.tag.startsWith('steam:') ? steamTag(game.tag, game.steam) : Object.hasOwn(GAMES, game.tag) || (game.tag.startsWith('custom:') && game.tag.length > 7))
+      && (game.tag.startsWith('igdb:') ? igdbTag(game.tag, game.igdb) : game.tag.startsWith('steam:') ? steamTag(game.tag, game.steam) : Object.hasOwn(GAMES, game.tag) || (game.tag.startsWith('custom:') && game.tag.length > 7))
+      && (game.igdb === undefined || igdbTag(game.tag, game.igdb))
       && (game.demo === undefined || typeof game.demo === 'boolean')
       && text(game.platform) && level(game.heat, 0, 4) && level(game.skill, 1, 9)
       && (game.steam === undefined || (object(game.steam) && (game.steam.hours === null || (typeof game.steam.hours === 'number' && Number.isFinite(game.steam.hours) && game.steam.hours >= 0)) && text(game.steam.updated)
@@ -50,6 +52,7 @@ export function createProfileRepository(storage: ProfileStorage, storageKey = PR
       const raw = await storage.getItem(storageKey);
       const profile = raw === null ? copy(ME) : decodeProfile(raw);
       for (const game of profile.games) {
+        if (game.igdb) registerIgdbGame(game.igdb);
         if (steamTag(game.tag, game.steam)) GAMES[game.tag] = { name: game.steam!.name!, join: 'room', colors: ['#5b6b7a', '#273747'] };
         if (!Object.hasOwn(GAMES, game.tag) && game.tag.startsWith('custom:')) addCustomGame(game.tag.slice(7));
       }

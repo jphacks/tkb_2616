@@ -8,7 +8,7 @@ import { steamLocal } from './steam-local.mjs';
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.png': 'image/png', '.ico': 'image/x-icon', '.ttf': 'font/ttf', '.woff': 'font/woff', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 
-export function localAppServer({ directory, steam = null, covers = null }) {
+export function localAppServer({ directory, steam = null, covers = null, games = null }) {
   const base = resolve(directory);
   return createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
@@ -22,6 +22,19 @@ export function localAppServer({ directory, steam = null, covers = null }) {
     if (request.method !== 'GET' && request.method !== 'HEAD' && !(request.method === 'POST' && request.url === '/__steam/logout')) { response.writeHead(405).end(); return; }
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (steam && await steam(request, response, url)) return;
+    if (url.pathname === '/__local/games') {
+      const id = url.searchParams.get('id');
+      const query = url.searchParams.get('query')?.trim();
+      if (id !== null ? !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(Number(id)) : !query || query.length > 100) {
+        response.writeHead(400).end(); return;
+      }
+      if (!games) { response.writeHead(503).end(); return; }
+      try {
+        const result = id !== null ? await games.get(Number(id)) : await games.search(query, 12);
+        response.writeHead(200, { 'Content-Type': mime['.json'] }).end(JSON.stringify({ games: result }));
+      } catch { response.writeHead(502).end(); }
+      return;
+    }
     if (url.pathname === '/__local/covers') {
       try {
         const raw = url.searchParams.get('ids') ?? '';
@@ -72,7 +85,7 @@ async function start() {
       return { async release() { unlock(); } };
     },
   }) : null;
-  const server = localAppServer({ directory: resolve(root, 'dist'), steam: steamLocal({ origin, client }), covers: igdb ? ids => igdb.steamCovers(ids) : null });
+  const server = localAppServer({ directory: resolve(root, 'dist'), steam: steamLocal({ origin, client }), covers: igdb ? ids => igdb.steamCovers(ids) : null, games: igdb });
   server.listen(port, '127.0.0.1', () => console.log(`Shumitomo：http://127.0.0.1:${port}/?design=play#/settings`));
 }
 

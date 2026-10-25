@@ -44,3 +44,28 @@ test('profile covers use requested Steam IDs and distinguish missing matches fro
     assert.equal((await fetch(base + '?ids=42', { headers: { Origin: 'https://foreign.example' } })).status, 403);
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
+
+
+test('catalog supports non-Steam search and exact IGDB lookup, with explicit failures', async () => {
+  const candidate = { id: 900001, name: 'Console game', coverUrl: null, platforms: [{ id: 130, name: 'Nintendo Switch' }] };
+  const calls = [];
+  const server = localAppServer({ directory: '/unused', games: {
+    async search(query, limit) { calls.push([query, limit]); if (query === 'fail') throw Error(); return [candidate]; },
+    async get(id) { calls.push(id); return id === candidate.id ? [candidate] : []; },
+  } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}/__local/games`;
+  try {
+    assert.deepEqual(await (await fetch(base + '?query=Console')).json(), { games: [candidate] });
+    assert.deepEqual(await (await fetch(base + '?id=900001')).json(), { games: [candidate] });
+    assert.deepEqual(await (await fetch(base + '?id=900002')).json(), { games: [] });
+    assert.equal((await fetch(base + '?query=fail')).status, 502);
+    for (const query of ['', '?id=0', '?id=1.5', '?id=9007199254740992', '?query=' + 'a'.repeat(101)]) assert.equal((await fetch(base + query)).status, 400);
+    assert.equal((await fetch(base + '?query=x', { headers: { Origin: 'https://foreign.example' } })).status, 403);
+    assert.deepEqual(calls, [['Console', 12], 900001, 900002, ['fail', 12]]);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+  const unconfigured = localAppServer({ directory: '/unused' });
+  await new Promise(resolve => unconfigured.listen(0, '127.0.0.1', resolve));
+  try { assert.equal((await fetch(`http://127.0.0.1:${unconfigured.address().port}/__local/games?query=x`)).status, 503); }
+  finally { await new Promise(resolve => unconfigured.close(resolve)); }
+});

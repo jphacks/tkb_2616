@@ -78,6 +78,12 @@ Deno.serve(async request => {
       : typeof body.query === 'string' && typeof body.limit === 'number' ? await igdb().search(body.query, body.limit)
       : null;
     if (!games) throw new IntegrationError('invalid_payload');
+    if (games.length) {
+      const { data: hidden, error } = await adminClient().from('games').select('id').in('id', games.map(game => game.id)).eq('hide_cover', true);
+      if (error) throw new IntegrationError('configuration');
+      const hiddenIds = new Set((hidden ?? []).map(game => game.id));
+      for (const game of games) if (hiddenIds.has(game.id)) game.coverUrl = null;
+    }
     return reply({ source: 'igdb', fetchedAt: new Date().toISOString(), games }, 200, headers);
   } catch (error) { return failure(error, headers); }
 });
