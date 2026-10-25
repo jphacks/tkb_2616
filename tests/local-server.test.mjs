@@ -24,3 +24,23 @@ test('integrated server serves the main build and callbacks, never source files 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('profile covers use requested Steam IDs and distinguish missing matches from API failures', async () => {
+  const requests = [];
+  const cover = { appId: 42, gameId: 9, imageUrl: 'https://images.igdb.com/igdb/image/upload/t_cover_big/example.jpg', sourceUrl: 'https://www.igdb.com/games/example' };
+  const server = localAppServer({ directory: '/unused', covers: async ids => {
+    requests.push(ids);
+    if (ids.includes(500)) throw new Error('IGDB unavailable');
+    return ids.includes(42) ? [cover] : [];
+  } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}/__local/covers`;
+  try {
+    assert.deepEqual(await (await fetch(base + '?ids=42,43')).json(), { covers: [cover] });
+    assert.deepEqual(await (await fetch(base + '?ids=99')).json(), { covers: [] });
+    assert.equal((await fetch(base + '?ids=500')).status, 502);
+    for (const query of ['', '?ids=0', '?ids=42,NaN', '?ids=' + Array(51).fill('42').join(',')]) assert.equal((await fetch(base + query)).status, 400);
+    assert.deepEqual(requests, [[42, 43], [99], [500]]);
+    assert.equal((await fetch(base + '?ids=42', { headers: { Origin: 'https://foreign.example' } })).status, 403);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});

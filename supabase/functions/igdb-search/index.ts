@@ -63,6 +63,15 @@ Deno.serve(async request => {
     headers = originHeaders(request);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     const body = await bodyOf(request);
+    if (Array.isArray(body.steamAppIds)) {
+      const covers = await igdb().steamCovers(body.steamAppIds);
+      if (!covers.length) return reply({ covers: [] }, 200, headers);
+      // Respect the existing image-removal setting without creating catalog rows.
+      const { data: hidden, error } = await adminClient().from('games').select('id').in('id', covers.map(cover => cover.gameId)).eq('hide_cover', true);
+      if (error) throw new IntegrationError('configuration');
+      const hiddenIds = new Set((hidden ?? []).map(game => game.id));
+      return reply({ covers: covers.filter(cover => !hiddenIds.has(cover.gameId)) }, 200, headers);
+    }
     if (body.save === true) return reply({ game: await saveGame(request, body.id) }, 200, headers);
     // Searching does not create an anonymous identity or write a game catalog.
     const games = typeof body.id === 'number' ? await igdb().get(body.id)

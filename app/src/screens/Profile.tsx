@@ -7,7 +7,7 @@ import {
   hasNgWord, isPersonId, isTime, type MyGame, type Person, type PersonId, type Profile,
 } from '../data';
 import { useStore } from '../store';
-import { profileCover } from '../profile-game-covers';
+import { useProfileCovers } from '../ProfileCovers';
 import { demoSettings } from '../demo-settings';
 import { steamProfileVisible } from '../demo-settings-state';
 import { AddModal, type AddKind } from '../AddModal';
@@ -31,6 +31,7 @@ function ProfileView() {
   const [adding, setAdding] = useState<AddKind | null>(null);
   const { wide, s, design } = useLayout();
   const p = st.me;
+  const { covers, failed: coversFailed, retry: retryCovers } = useProfileCovers(p.games);
   const actionPending = useRef(false);
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState<{ kind: AddKind; key: string; name: string } | null>(null);
@@ -143,10 +144,14 @@ function ProfileView() {
         </View>
       </Card>
       {p.games.some(game => game.steam?.appId) ? <Note>Steamの実力・熱量は初期値から変更できます。</Note> : null}
-      {p.games.some(game => profileCover(GAMES[game.tag].name)) ? <TextButton label="ゲーム画像：IGDB.com" onPress={() => open('https://www.igdb.com/')} /> : null}
+      {coversFailed ? <Stack gap={4}>
+        <Note>ゲーム画像を取得できませんでした。ゲームとプレイ時間はそのまま表示しています。</Note>
+        <TextButton label="ゲーム画像を再取得" onPress={retryCovers} />
+      </Stack> : null}
+      {covers.length > 0 ? <TextButton label="ゲーム画像：IGDB.com" onPress={() => open('https://www.igdb.com/')} /> : null}
       <Block title="ゲーム" count={p.games.length} right={<MiniButton label="＋ 追加" onPress={() => setAdding('games')} />}>
         {p.games.length ? <Stack gap={10}>{p.games.map((g) => (
-          <GameCard key={g.tag} g={g} showSteam={g.steam?.appId ? settings.steamShow.games : steamProfileVisible(settings)}
+          <GameCard key={g.tag} g={g} coverUrl={covers.find(cover => cover.appId === g.steam?.appId)?.imageUrl} showSteam={g.steam?.appId ? settings.steamShow.games : steamProfileVisible(settings)}
             onRecruit={() => { update((d) => { d.role = 'rec'; }); go('create', { game: g.tag }); }}
             onSkill={(v) => setGame(g.tag, 'skill', v)}
             onHeat={(v) => setGame(g.tag, 'heat', v)}
@@ -204,8 +209,8 @@ function TimesCard({ times, region, embedded }: { times: { start: string; end: s
 }
 
 // 横長のゲームカード。画像を左、名前・基本情報・熱量を右にまとめる。
-function GameCard({ g, onRecruit, onSkill, onHeat, actions, showSteam = true }: {
-  g: MyGame; actions?: React.ReactNode; onRecruit?: () => void; onSkill?: (v: number) => void; onHeat?: (v: number) => void; showSteam?: boolean;
+function GameCard({ g, coverUrl, onRecruit, onSkill, onHeat, actions, showSteam = true }: {
+  g: MyGame; coverUrl?: string; actions?: React.ReactNode; onRecruit?: () => void; onSkill?: (v: number) => void; onHeat?: (v: number) => void; showSteam?: boolean;
 }) {
   const { s, width } = useLayout();
   const [editingSkill, setEditingSkill] = useState(false);
@@ -215,7 +220,7 @@ function GameCard({ g, onRecruit, onSkill, onHeat, actions, showSteam = true }: 
     <>
       <Card style={{ paddingVertical: s(12), paddingHorizontal: s(12) }}>
         <Row gap={12}>
-          <Art tag={g.tag} size={artWidth} aspectRatio={2.1} coverUrl={profileCover(gameName)?.imageUrl} />
+          <Art tag={g.tag} size={artWidth} aspectRatio={2.1} coverUrl={coverUrl} />
           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
             <Row gap={4} style={{ alignItems: 'flex-start' }}>
               <Txt size={16} weight="bold" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>{gameName}</Txt>

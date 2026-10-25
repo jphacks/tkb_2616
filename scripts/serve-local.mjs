@@ -8,7 +8,7 @@ import { steamLocal } from './steam-local.mjs';
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.png': 'image/png', '.ico': 'image/x-icon', '.ttf': 'font/ttf', '.woff': 'font/woff', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 
-export function localAppServer({ directory, steam = null }) {
+export function localAppServer({ directory, steam = null, covers = null }) {
   const base = resolve(directory);
   return createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
@@ -22,6 +22,16 @@ export function localAppServer({ directory, steam = null }) {
     if (request.method !== 'GET' && request.method !== 'HEAD' && !(request.method === 'POST' && request.url === '/__steam/logout')) { response.writeHead(405).end(); return; }
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (steam && await steam(request, response, url)) return;
+    if (url.pathname === '/__local/covers') {
+      try {
+        const raw = url.searchParams.get('ids') ?? '';
+        if (!/^[1-9][0-9]*(,[1-9][0-9]*)*$/.test(raw) || raw.split(',').length > 50) { response.writeHead(400).end(); return; }
+        if (!covers) { response.writeHead(503).end(); return; }
+        const result = await covers(raw.split(',').map(Number));
+        response.writeHead(200, { 'Content-Type': mime['.json'] }).end(JSON.stringify({ covers: result }));
+      } catch { response.writeHead(502).end(); }
+      return;
+    }
     if (url.pathname === '/__local/status.json') {
       response.writeHead(200, { 'Content-Type': mime['.json'] }).end(JSON.stringify({ mode: 'local-integrations' })); return;
     }
@@ -48,7 +58,21 @@ async function start() {
   const client = key ? new SteamClient(key) : null;
   const port = Number(process.env.STEAM_LOCAL_PORT ?? 4183);
   const origin = `http://127.0.0.1:${port}`;
-  const server = localAppServer({ directory: resolve(root, 'dist'), steam: steamLocal({ origin, client }) });
+  const { IgdbClient } = await import('../packages/integrations/dist/src/igdb.js');
+  let tail = Promise.resolve();
+  let nextRequest = 0;
+  const igdb = process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET ? new IgdbClient({ clientId: process.env.TWITCH_CLIENT_ID, clientSecret: process.env.TWITCH_CLIENT_SECRET }, {
+    async acquire() {
+      const previous = tail;
+      let unlock;
+      tail = new Promise(resolve => { unlock = resolve; });
+      await previous;
+      await new Promise(resolve => setTimeout(resolve, Math.max(0, nextRequest - Date.now())));
+      nextRequest = Date.now() + 260;
+      return { async release() { unlock(); } };
+    },
+  }) : null;
+  const server = localAppServer({ directory: resolve(root, 'dist'), steam: steamLocal({ origin, client }), covers: igdb ? ids => igdb.steamCovers(ids) : null });
   server.listen(port, '127.0.0.1', () => console.log(`Shumitomo：http://127.0.0.1:${port}/?design=play#/settings`));
 }
 
