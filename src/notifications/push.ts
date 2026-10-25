@@ -18,7 +18,7 @@ export async function registerPush(): Promise<'registered' | 'disabled' | 'denie
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) throw new Error('通知の接続設定が必要です。');
   const notifications = await import('expo-notifications');
-  if (Platform.OS === 'android') await notifications.setNotificationChannelAsync('default', { name: 'Shumitomo', importance: notifications.AndroidImportance.DEFAULT });
+  if (Platform.OS === 'android') await notifications.setNotificationChannelAsync('default', { name: '趣味トモ', importance: notifications.AndroidImportance.DEFAULT });
   let permission = await notifications.getPermissionsAsync();
   if (!permission.granted && permission.canAskAgain) permission = await notifications.requestPermissionsAsync();
   if (!permission.granted) return 'denied';

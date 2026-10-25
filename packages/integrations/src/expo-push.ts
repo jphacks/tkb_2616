@@ -26,7 +26,7 @@ export class ExpoPushClient {
   async send(token: string, event: NotificationEvent): Promise<PushResult> {
     if (!isExpoPushToken(token)) throw new IntegrationError('invalid_payload');
     const result = await this.#post('send', {
-      to: token, title: 'Shumitomo', body: '新しいお知らせがあります。アプリで確認してください。', channelId: 'default',
+      to: token, title: '趣味トモ', body: '新しいお知らせがあります。アプリで確認してください。', channelId: 'default',
       // Never include room numbers, invitation URLs, game IDs or arbitrary caller text.
       data: { eventId: event.id, kind: event.kind, target: { type: event.target.type, id: event.target.id } },
     });
