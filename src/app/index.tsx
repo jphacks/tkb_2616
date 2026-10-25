@@ -4,6 +4,7 @@ import { SettingsScreen } from '../../app/src/screens/Settings';
 import { ConnectedSettingsScreen } from '../settings/ConnectedSettings';
 import { getSupabase } from '../lib/supabase';
 import { liveScreens } from '../live/screens';
+import { FriendConnectionsScreen } from '../live/friends-screen';
 import { SteamProfileSync } from '../local/SteamProfileSync';
 import { SteamPreview } from '../local/SteamPreview';
 import { ownSteamLibrary } from '../lib/own-steam';
@@ -21,6 +22,12 @@ function SteamOnlyConnectedSettings() {
 function CloudSteamProfileSync() {
   return <SteamProfileSync readLibrary={ownSteamLibrary} />;
 }
+
+// Enable the connected screen only after its migration has been applied.
+// Local recording and tests always use the new screen; deploys without the new schema keep their current tab.
+const connectedScreens = process.env.EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT === 'true'
+  ? liveScreens
+  : { ...liveScreens, connections: undefined };
 
 export default function Home() {
   const local = useLocalIntegrations();
@@ -47,7 +54,7 @@ export default function Home() {
     profileStorageKey={configured ? `shumitomo.profile.v1:${account.userId ?? 'guest'}` : undefined}
     integration={configured ? (account.userId ? CloudSteamProfileSync : undefined) : local ? SteamProfileSync : undefined}
     settingsScreen={configured ? (local ? SteamOnlyConnectedSettings : ConnectedSettingsScreen) : invalid ? ConnectedSettingsScreen : local ? LocalSettings : SettingsScreen}
-    liveScreens={configured ? liveScreens : undefined}
-    modeLabel={configured ? 'DB接続版' : local ? 'Steam実接続・ほかはデモ' : undefined}
+    liveScreens={configured ? connectedScreens : { connections: FriendConnectionsScreen }}
+    modeLabel={configured ? 'DB接続版' : local ? 'Steam実接続・フレンド募集はローカル実演' : 'ローカル実演'}
   />;
 }

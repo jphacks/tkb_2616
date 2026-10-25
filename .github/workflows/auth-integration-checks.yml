@@ -37,6 +37,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       EXPO_PUBLIC_APP_URL: https://tkb2616.expo.app
       EXPO_PUBLIC_ENABLE_PUSH: 'false'
+      EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT: ${{ vars.EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT || 'false' }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:

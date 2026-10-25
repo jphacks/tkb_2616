@@ -23,6 +23,38 @@ export type Database = {
           }
         },"public": {
           Tables: {
+            "friend_recruitments": {
+              Row: { id: string; owner_id: string; nickname: string; game_id: number; platform: string; skill: number; enthusiasm: number; available_from: string; available_to: string; created_at: string; closed_at: string | null }
+              ComputedFields: never
+              Insert: { id?: string; owner_id: string; nickname: string; game_id: number; platform: string; skill: number; enthusiasm: number; available_from: string; available_to: string; created_at?: string; closed_at?: string | null }
+              Update: Partial<Database["public"]["Tables"]["friend_recruitments"]["Insert"]>
+              Relationships: [
+                { foreignKeyName: "friend_recruitments_owner_id_fkey"; columns: ["owner_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+                { foreignKeyName: "friend_recruitments_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games"; referencedColumns: ["id"] }
+              ]
+            },
+            "friend_requests": {
+              Row: { id: string; recruitment_id: string; sender_id: string; recipient_id: string; nickname: string; status: string; created_at: string }
+              ComputedFields: never
+              Insert: { id?: string; recruitment_id: string; sender_id: string; recipient_id: string; nickname: string; status?: string; created_at?: string }
+              Update: Partial<Database["public"]["Tables"]["friend_requests"]["Insert"]>
+              Relationships: [
+                { foreignKeyName: "friend_requests_recruitment_id_fkey"; columns: ["recruitment_id"]; isOneToOne: false; referencedRelation: "friend_recruitments"; referencedColumns: ["id"] },
+                { foreignKeyName: "friend_requests_sender_id_fkey"; columns: ["sender_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+                { foreignKeyName: "friend_requests_recipient_id_fkey"; columns: ["recipient_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
+              ]
+            },
+            "friendships": {
+              Row: { user_a: string; user_b: string; a_nickname: string; b_nickname: string; game_id: number; created_at: string }
+              ComputedFields: never
+              Insert: { user_a: string; user_b: string; a_nickname: string; b_nickname: string; game_id: number; created_at?: string }
+              Update: Partial<Database["public"]["Tables"]["friendships"]["Insert"]>
+              Relationships: [
+                { foreignKeyName: "friendships_user_a_fkey"; columns: ["user_a"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+                { foreignKeyName: "friendships_user_b_fkey"; columns: ["user_b"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+                { foreignKeyName: "friendships_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games"; referencedColumns: ["id"] }
+              ]
+            },
             "application_game_ids": {
                   Row: {
                     "application_id": string,"game_account_id": string
@@ -336,6 +368,12 @@ isOneToOne: false
             "apply_to_recruitment":
 { Args: { "p_enthusiasm"?: number,"p_game_account_id"?: string,"p_mode"?: string,"p_op_id": string,"p_platform"?: string,"p_platform_other"?: string,"p_recruitment_id": string,"p_skill"?: number,"p_usual_time_end"?: string,"p_usual_time_start"?: string,"p_voice_chat"?: string }; Returns: Json
                            },
+"publish_friend_recruitment": { Args: { p_op_id: string; p_game_id: number; p_nickname: string; p_platform: string; p_skill: number; p_enthusiasm: number; p_available_from: string; p_available_to: string }; Returns: Json },
+"request_friendship": { Args: { p_op_id: string; p_recruitment_id: string; p_nickname: string }; Returns: Json },
+"accept_friend_request": { Args: { p_op_id: string; p_request_id: string }; Returns: Json },
+"close_friend_recruitment": { Args: { p_op_id: string; p_recruitment_id: string }; Returns: Json },
+"remove_friendship": { Args: { p_op_id: string; p_peer_id: string }; Returns: Json },
+"friend_connections": { Args: Record<PropertyKey, never>; Returns: { peer_id: string; nickname: string; game_id: number; game_name: string; created_at: string }[] },
 "approve_application":
 { Args: { "p_application_id": string,"p_op_id": string }; Returns: Json
                            },

@@ -22,6 +22,14 @@ npx supabase test db
 
 ## 画面からの使い方
 
+### フレンド募集を有効にする
+
+新しいフレンド欄は、フレンド募集を出す・申請する・承認する・フレンド一覧へ残す操作を扱う。既存のゲーム募集とは別に保存する。SQL・RPCの正本は `migrations/`、画面との契約は `src/live/friends-types.ts`。
+
+接続先へフレンド募集の追加マイグレーションを適用してから、Webビルドで `EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT=true` を渡す。GitHub Actionsでは同名のRepository variableを使う。未設定の本番ビルドは現在のフレンド欄を維持するため、Webだけが先に更新されても未適用の表を呼ばない。
+
+Supabaseを設定しないローカル版では、新画面を「ローカル実演」として使える。データはこのPC内に保存し、クラウドへ送らない。`?friendDemoUser=sora#/connections` で別の実演利用者として同じPC内の募集へ申請できる。本番DBへの書き込み失敗を、この実演モードに切り替えて成功と扱うことはしない。
+
 画面に入れてよいのは、Supabase の URL と公開用の鍵（`sb_publishable_`）だけ。
 
 ### 読む

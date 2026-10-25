@@ -16,6 +16,7 @@ import { InfoRow, JoinInfo } from '../../app/src/screens/Recruit';
 import { saveGame, searchGames } from '../lib/games';
 import { steamTrustOf, type UserSteamTrust } from '../lib/trust';
 import { rememberReturn } from './return-to';
+import { FriendConnectionsScreen } from './friends-screen';
 import { createRecruitmentDraftStore, exactSavedGame, gameRouteInput, type RecruitmentDraft } from './create-draft';
 import { createOperation } from './operation';
 import { orderByCloseSkill, profileSkillFor, vcMatch } from './match-order';
@@ -895,7 +896,7 @@ function MatchedScreen({ params }: Params) {
   </>);
 }
 
-export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched', ComponentType<Params>>>;
+export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched' | 'connections', ComponentType<Params>>>;
 export const liveScreens: LiveScreens = {
-  recruit: RecruitHome, create: CreateScreen, requests: RequestsScreen, list: ListScreen, matched: MatchedScreen,
+  recruit: RecruitHome, create: CreateScreen, requests: RequestsScreen, list: ListScreen, matched: MatchedScreen, connections: FriendConnectionsScreen,
 };

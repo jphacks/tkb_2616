@@ -28,7 +28,7 @@ export default function App() {
 }
 
 // 接続先があるとき、募集・一覧・参加の画面を本物のデータの画面に差し替える（ルートの src/live/screens.tsx）
-export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched', ComponentType<{ params: Record<string, string> }>>>;
+export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched' | 'connections', ComponentType<{ params: Record<string, string> }>>>;
 
 type ScreenOptions = { settingsScreen: ComponentType; liveScreens?: LiveScreens; modeLabel?: string };
 
