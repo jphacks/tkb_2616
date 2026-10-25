@@ -139,3 +139,15 @@ npm run doctor:config
 - rootのMetroはrootのnode_modulesへ解決を統一する。app/に単独デモの依存を入れてもReactを二重ロードしない。サーバー用.envとsupabaseの実装・SQLは配信対象外。
 - ローカルブラウザで公開→承認→編集、プロフィールへの同時保存、別ゲームからの再公開防止、設定画面、認証診断、設定未入力時のcallbackを確認した。募集画面はデモ状態管理のまま。
 - 実OAuth、実API、Push、チームDB、デプロイは未接続・未検証。個人Supabaseは使用しない。③の表を変えるときは、既存のマイグレーションを書き換えず、②と合わせて新しいマイグレーションを足す。
+
+## プロフィールのゲーム画像
+
+固定15タイトルの対応表を廃止し、`IgdbClient.steamCovers` でSteam App IDから画像を解決する。公開版は `igdb-search`、ローカル版は `/__local/covers` を使う。名前の類似一致は使わず、対応がない場合・複数のIGDBゲームに対応する場合は画像なしで表示する。画像の取得に失敗した場合はゲームとプレイ時間を保持し、画像の再取得ボタンを表示する。公開版では既存の `games.hide_cover` にも従う。プロフィールやゲームカタログへの書き込みはしない。
+
+外部APIの確認先（2026-10-25）：[IGDB External Game](https://api-docs.igdb.com/#external-game) の `uid`・`external_game_source`・`game` と [Images](https://api-docs.igdb.com/#images)。廃止予定の `category` ではなく、展開した `external_game_source.name` でSteamを選ぶ。
+
+公開反映はDB担当と公開担当に分ける。
+
+1. DB担当：対象環境の既存 `TWITCH_CLIENT_ID`・`TWITCH_CLIENT_SECRET` を確認し、`igdb-search` を更新する。既存のIGDB共通レート制限を使う。DBマイグレーションは追加しない。
+2. 公開担当：DB担当の完了後、同じ環境の公開設定でWebを再ビルドしEAS Hostingへ反映する。
+3. 本人のSteamゲームについて、固定表に無かったタイトルの画像が自動で表示されること、一致しないゲームは画像なしになること、画像取得失敗でもゲーム・プレイ時間が残り再試行できることを確認する。特定ユーザーの15タイトルを成功判定の条件にしない。

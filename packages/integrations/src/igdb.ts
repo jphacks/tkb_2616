@@ -91,6 +91,22 @@ export class IgdbClient {
     }
     throw new IntegrationError('unauthorized');
   }
+  // Steam's external ID is stable across title/localization changes. Never guess by name.
+  async steamCovers(appIds: number[]): Promise<SteamCover[]> {
+    if (!Array.isArray(appIds) || appIds.length > 50 || appIds.some(id => !Number.isSafeInteger(id) || id < 1 || id > 2_147_483_647)) throw new IntegrationError('invalid_payload');
+    const ids = [...new Set(appIds)];
+    if (!ids.length) return [];
+    const rows: unknown[] = [];
+    for (let offset = 0; ; offset += 500) {
+      const page = await this.#games(`fields uid,external_game_source.name,game.id,game.name,game.slug,game.cover.url; where external_game_source.name = "Steam" & uid = (${ids.map(id => JSON.stringify(String(id))).join(',')}); sort id asc; limit 500; offset ${offset};`, value => {
+        if (!Array.isArray(value)) throw new IntegrationError('invalid_payload');
+        return value;
+      }, 'external_games');
+      rows.push(...page);
+      if (page.length < 500) break;
+    }
+    return parseSteamCovers(rows, ids);
+  }
   search(query: string, limit: number): Promise<GameCandidate[]> {
     if (!query.trim() || !Number.isSafeInteger(limit) || limit < 1 || limit > 500) throw new IntegrationError('invalid_payload');
     return this.#search(JSON.stringify(query.trim()), limit);
@@ -121,4 +137,23 @@ export class IgdbClient {
     if (!Number.isSafeInteger(id) || id < 1) throw new IntegrationError('invalid_payload');
     return this.#games(`where id = ${id}; fields name,alternative_names.name,game_localizations.name,platforms.name,cover.image_id,first_release_date,external_games.uid,external_games.url,external_games.category; limit 1;`, parseGameRecord);
   }
+}
+
+export interface SteamCover { appId: number; gameId: number; imageUrl: string; sourceUrl: string }
+export function parseSteamCovers(rows: unknown[], requested: number[]): SteamCover[] {
+  const matches = new Map<number, Map<number, SteamCover | null>>();
+  for (const raw of rows) {
+    const row = object(raw);
+    if (object(row.external_game_source).name !== 'Steam' || typeof row.uid !== 'string' || !/^[1-9][0-9]*$/.test(row.uid)) continue;
+    const appId = Number(row.uid);
+    if (!requested.includes(appId) || row.game == null) continue;
+    const game = parseGames([row.game])[0]!;
+    const found = matches.get(appId) ?? new Map<number, SteamCover | null>();
+    const image = game.coverUrl ? new URL(game.coverUrl) : null;
+    if (image) image.pathname = image.pathname.replace('/t_thumb/', '/t_cover_big/');
+    found.set(game.id, image && game.slug ? { appId, gameId: game.id, imageUrl: image.href, sourceUrl: `https://www.igdb.com/games/${encodeURIComponent(game.slug)}` } : null);
+    matches.set(appId, found);
+  }
+  // Ambiguous records stay without an image rather than showing a different edition.
+  return [...matches.values()].flatMap(found => found.size === 1 ? [...found.values()].filter((cover): cover is SteamCover => cover !== null) : []);
 }

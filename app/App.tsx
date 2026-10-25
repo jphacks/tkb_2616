@@ -10,6 +10,8 @@ import { DelaGothicOne_400Regular } from '@expo-google-fonts/dela-gothic-one/400
 import { ZenKakuGothicNew_400Regular } from '@expo-google-fonts/zen-kaku-gothic-new/400Regular';
 import { ZenKakuGothicNew_700Bold } from '@expo-google-fonts/zen-kaku-gothic-new/700Bold';
 import { ROUTE_TAB, StoreProvider, resolveRoute, useStore, type Tab } from './src/store';
+import { ProfileCoverReader } from './src/ProfileCovers';
+import type { ReadProfileCovers } from './src/profile-game-covers';
 import { C, useLayout } from './src/theme';
 import { Badge, Row, Txt } from './src/ui';
 import { DesignSwitcher } from './src/DesignSwitcher';
@@ -28,7 +30,7 @@ export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'li
 
 type ScreenOptions = { settingsScreen: ComponentType; liveScreens?: LiveScreens; modeLabel?: string };
 
-export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string }) {
+export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey, readProfileCovers }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string; readProfileCovers?: ReadProfileCovers }) {
   const { design } = useLayout();
   const [loaded] = useFonts({
     DelaGothicOne_400Regular,
@@ -39,11 +41,13 @@ export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, mod
   if (!loaded && Platform.OS !== 'web') return <View style={{ flex: 1, backgroundColor: C.bg }} />;
   return (
     <SafeAreaProvider>
-      <StoreProvider profileStorageKey={profileStorageKey}>
-        {Integration ? <Integration /> : null}
-        <Shell settingsScreen={settingsScreen} liveScreens={liveScreens} modeLabel={modeLabel} />
-        <StatusBar style={design.dark ? 'light' : 'dark'} />
-      </StoreProvider>
+      <ProfileCoverReader.Provider value={readProfileCovers}>
+        <StoreProvider profileStorageKey={profileStorageKey}>
+          {Integration ? <Integration /> : null}
+          <Shell settingsScreen={settingsScreen} liveScreens={liveScreens} modeLabel={modeLabel} />
+          <StatusBar style={design.dark ? 'light' : 'dark'} />
+        </StoreProvider>
+      </ProfileCoverReader.Provider>
     </SafeAreaProvider>
   );
 }
