@@ -1,6 +1,6 @@
 # 趣味トモ
 
-https://github.com/user-attachments/assets/027409e5-bfa2-487b-8551-1251681fd128
+https://github.com/user-attachments/assets/caa63c27-0d29-4076-8d9e-dcddb73fb0aa
 
 - **本番環境**：https://tkb2616.expo.app
 - **モック版**（ログイン不要で全画面を体験できます）：https://ichi-choken.github.io/tkb_2616/
