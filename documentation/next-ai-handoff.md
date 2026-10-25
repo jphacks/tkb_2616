@@ -4,7 +4,7 @@
 
 ## 作業前に確認すること
 
-- 製品の実装先は [jphacks/tkb_2616](https://github.com/jphacks/tkb_2616)、仕様の参照先は [Umi-s-Atelie/hobby-platform](https://github.com/Umi-s-Atelie/hobby-platform)。仕様を実装済みの根拠にせず、製品側のコードで確認する。
+- 製品の実装先は [jphacks/tkb_2616](https://github.com/jphacks/tkb_2616)。仕様はチームの非公開のリポジトリにある（場所はチームの人に聞く）。仕様を実装済みの根拠にせず、製品側のコードで確認する。
 - 製品リポジトリのルートで `git status --short --branch` と差分を確認する。未コミットの変更を保持し、問題なく更新できる状態で `git pull --ff-only` を行う。競合を解消するために他の変更を reset やファイル全体の置換で消さない。
 - pushする場合も、直前にリモートと差分を確認する。force pushで他の変更を上書きしない。
 - 個人PCの配置・ブランチ・認証状態・実行権限を固定の前提にしない。秘密値を含むファイルを丸ごと出力せず、値をチャット・Git・ログに載せない。
