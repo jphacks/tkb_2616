@@ -189,7 +189,7 @@ type Store = {
 
 const StoreContext = createContext<Store | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function StoreProvider({ children, profileStorageKey }: { children: ReactNode; profileStorageKey?: string }) {
   // この端末に残っていれば、前の続きから始める（saved.ts）。プロフィールは profile-storage から読む
   const [initial] = useState(() => {
     const fresh = freshState(isWeb ? hashToRoute(window.location.hash) : undefined);
@@ -198,7 +198,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   });
   const restored = useRef(initial.restored);
   const [s, setS] = useState<State>(initial.state);
-  const [profiles] = useState(() => createProfileRepository(AsyncStorage));
+  const [profiles] = useState(() => createProfileRepository(AsyncStorage, profileStorageKey));
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);

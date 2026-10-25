@@ -1,4 +1,5 @@
-import { beginSteamLink, finishSteamLink, beginDiscordLink, finishDiscordLink, DiscordClient, IntegrationError, tokenCipher, type Provider } from '../../../packages/integrations/src/index.ts';
+import { readOwnSteamLibrary } from '../../../packages/integrations/src/own-steam.ts';
+import { beginSteamLink, finishSteamLink, beginDiscordLink, finishDiscordLink, DiscordClient, SteamClient, IntegrationError, tokenCipher, type Provider } from '../../../packages/integrations/src/index.ts';
 import { adminClient, bodyOf, failure, originHeaders, principalOf, reply, required } from '../_shared/runtime.ts';
 import { attemptStore, claimInitialSteam, linkStatus, removeLink, saveLink } from '../_shared/store.ts';
 
@@ -23,6 +24,22 @@ Deno.serve(async request => {
     const principal = await principalOf(request);
     const body = await bodyOf(request);
     const db = adminClient();
+    if (body.action === 'steam-library') {
+      const library = await readOwnSteamLibrary(principal, {
+        async identities(userId) {
+          const { data, error } = await db.auth.admin.getUserById(userId);
+          if (error || !data.user || data.user.id !== userId) throw new IntegrationError('unauthorized');
+          return data.user.identities ?? [];
+        },
+        async linkedSteamId(userId) {
+          const { data, error } = await db.from('integration_links').select('external_id').eq('user_id', userId).eq('provider', 'steam').maybeSingle();
+          if (error) throw new IntegrationError('configuration');
+          return data?.external_id ?? null;
+        },
+        ownedGames: id => new SteamClient(required('STEAM_WEB_API_KEY')).ownedGames(id),
+      });
+      return reply({ library }, 200, headers);
+    }
     if (body.action === 'status') return reply({ links: await linkStatus(db, principal.userId) }, 200, headers);
     const provider = providerOf(body.provider);
     const store = attemptStore(db);
