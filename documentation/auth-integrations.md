@@ -115,6 +115,21 @@
 3. 関数・秘密の値を変えたときは `node scripts/setup-project.mjs zehncdobeylxamsyuulc --app-url https://tkb2616.expo.app`。デモ用の関数は、この公開先からの呼び出しだけに答える
 4. デモ用の Redirect URLs に `https://tkb2616.expo.app/auth/callback` が入っていること（管理画面）
 
+### Webの自動公開
+
+`.github/workflows/auth-integration-checks.yml` は `main` へのpush後、既存の `checks`（テスト・型検査・Edge検査・Web／nativeの書き出し）が成功した場合だけ `Publish web` を実行する。PRや別ブランチからは公開しない。デモ用Supabaseの設定でWebを改めて書き出し、EAS Hostingの本番URLへ公開する。公開ジョブを直列化し、新しいmainがある古い実行は公開しない。
+
+公開担当が一度だけ、[リポジトリのActions設定](https://github.com/jphacks/tkb_2616/settings/secrets/actions)に登録する（値をコミットしない）：
+
+| 種別 | 名前 | 値 |
+| --- | --- | --- |
+| Repository secret | `EXPO_TOKEN` | `@hukahirames-team/shumitomo` に公開できるExpoアカウントのアクセストークン |
+| Repository variable | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | デモ用Supabase `zehncdobeylxamsyuulc` の `sb_publishable_` で始まる公開用キー |
+
+未登録のときは公開ジョブをエラーで止める。登録後は、最新mainのActions実行の失敗した `Publish web` ジョブを再実行する。古い実行の再実行では公開しない。初回はActionsの成功と公開URLで「趣味トモ」の表示・Steamログインを確認する。それ以降はmainへのpushで自動公開する。
+
+Expoのトークン作成方法は[公式説明](https://docs.expo.dev/accounts/programmatic-access/)、CIでの `EXPO_TOKEN` 使用は[公式説明](https://docs.expo.dev/build/building-on-ci/#provide-a-personal-access-token-to-authenticate-with-your-expo-account-on-ci)を参照（確認：2026-10-25）。この仕組みが反映するのはWebアプリ。Supabaseの関数・DB変更はDB担当が反映する。
+
 ## 検証と未完了事項
 
 ```sh

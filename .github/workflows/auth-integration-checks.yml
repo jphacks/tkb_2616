@@ -23,3 +23,56 @@ jobs:
       - run: npm run setup
       - run: npm run check
       - run: npm run build:native
+  deploy-web:
+    name: Publish web
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: eas-hosting-production
+      cancel-in-progress: false
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://zehncdobeylxamsyuulc.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      EXPO_PUBLIC_APP_URL: https://tkb2616.expo.app
+      EXPO_PUBLIC_ENABLE_PUSH: 'false'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check deployment configuration
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          const missing = [];
+          if (!process.env.EXPO_TOKEN?.trim()) missing.push('Secret: EXPO_TOKEN');
+          if (!process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.startsWith('sb_publishable_')) missing.push('Variable: EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
+          for (const name of missing) console.error(`::error::Configure ${name} in repository Settings > Secrets and variables > Actions.`);
+          if (missing.length) process.exit(1);
+          JS
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            packages/integrations/package-lock.json
+      - run: npm run setup
+      - name: Export web with the public app settings
+        run: npm run build:web
+      - name: Check that this is still the latest main
+        id: revision
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          if [ "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" ]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'A newer main exists; its successful CI will publish instead.'
+          fi
+      - name: Deploy to EAS Hosting production
+        if: steps.revision.outputs.current == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx --yes eas-cli@25.3.0 deploy --prod --non-interactive
