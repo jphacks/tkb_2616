@@ -1,9 +1,9 @@
 # 趣味トモ
 
-https://github.com/user-attachments/assets/caa63c27-0d29-4076-8d9e-dcddb73fb0aa
-
 - **本番環境**：https://tkb2616.expo.app
 - **モック版**（ログイン不要で全画面を体験できます）：https://ichi-choken.github.io/tkb_2616/
+- **紹介動画**：https://github.com/user-attachments/assets/caa63c27-0d29-4076-8d9e-dcddb73fb0aa
+
 
 ローカルで動かす場合（Node.js 24.3 以上）：
 
@@ -12,7 +12,7 @@ npm run setup
 npm run start:local
 ```
 
-## 製品概要
+## 【製品概要】
 
 **SNSに散らばる募集と、機種ごとに散らばる「好き」を、ひとつに。**
 
@@ -82,7 +82,7 @@ X や Discord に貼られた募集は、その場所を見ている人にしか
 | 遊んだ相手・プロフィールからのフレンド申請、フレンドの通知、共通点の表示、合う理由 | モック版のみ |
 | 条件変更の再確認、プッシュ通知 | 未実装 |
 
-## 開発技術
+## 【開発技術】
 
 ### 活用した技術
 
