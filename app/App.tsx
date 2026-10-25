@@ -109,8 +109,8 @@ function DemoBar({ modeLabel }: { modeLabel?: string }) {
     <View style={{ backgroundColor: C.stage, borderBottomWidth: 1, borderColor: C.line }}>
       <View style={{ width: '100%', maxWidth: 1320, alignSelf: 'center', paddingHorizontal: s(wide ? 24 : 14), paddingVertical: s(8), gap: s(8) }}>
         <Row gap={8}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Shumitomo ホーム" onPress={() => go('profile')}>
-            <Txt size={design.id === 'play' ? 19 : 18} weight={design.id === 'play' ? 'display' : 'bold'} style={{ letterSpacing: design.id === 'play' ? -1 : -0.4 }}>shumitomo</Txt>
+          <Pressable accessibilityRole="button" accessibilityLabel="趣味トモ ホーム" onPress={() => go('profile')}>
+            <Txt size={design.id === 'play' ? 19 : 18} weight={design.id === 'play' ? 'display' : 'bold'} style={{ letterSpacing: design.id === 'play' ? -1 : -0.4 }}>趣味トモ</Txt>
           </Pressable>
           {wide ? <View style={{ flex: 1, alignItems: 'center' }}><DesignSwitcher /></View> : <View style={{ flex: 1 }} />}
           {wide ? <Badge label={modeLabel ?? "画面デモ"} tone="rest" /> : null}

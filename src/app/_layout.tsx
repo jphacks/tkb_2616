@@ -4,5 +4,5 @@ import { watchAuthRefresh } from '../lib/supabase';
 
 export default function RootLayout() {
   useEffect(() => watchAuthRefresh(), []);
-  return <Stack screenOptions={{ headerTitle: 'Shumitomo' }}><Stack.Screen name="index" options={{ headerShown: false }} /></Stack>;
+  return <Stack screenOptions={{ headerTitle: '趣味トモ' }}><Stack.Screen name="index" options={{ headerShown: false }} /></Stack>;
 }

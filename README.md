@@ -1,4 +1,4 @@
-# Shumitomo
+# 趣味トモ
 
 [![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
 
@@ -8,7 +8,7 @@
 
 **ゲームや趣味友達の募集を各SNSをまとめて管理**
 
-「Shumitomo」は、複数のゲームや機種にまたがるプロフィールと、SNSからアクセスできる募集一覧を組み合わせた、仲間を探すためのサービスです。
+「趣味トモ」は、複数のゲームや機種にまたがるプロフィールと、SNSからアクセスできる募集一覧を組み合わせた、仲間を探すためのサービスです。
 
 ### 背景(製品開発のきっかけ、課題等）
 

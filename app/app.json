@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Shumitomo",
+    "name": "趣味トモ",
     "slug": "shumitomo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,7 +21,7 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "output": "single",
-      "name": "Shumitomo",
+      "name": "趣味トモ",
       "themeColor": "#f5f6fa"
     },
     "experiments": {
