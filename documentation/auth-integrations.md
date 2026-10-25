@@ -28,11 +28,12 @@
 | 連携状態の表示 | `packages/integrations/src/link-status.ts` の `LinkStatus` / `linkStatusLabels` / `lastUpdatedLabel` |
 | ゲーム検索 | `src/lib/games.ts` の `searchGames`。候補を選んだら `saveGame(id)` で `games` に保存してから、その `id` で募集を出す（保存はログインが要る。IGDBに届かないときは、保存済みのゲームならそのまま返る） |
 | 募集・一覧・参加希望・承認・成立 | `src/live/screens.tsx`（DBとのやり取りは `src/live/api.ts`）。接続先（`EXPO_PUBLIC_SUPABASE_URL` と公開用の鍵）があるときだけ、`src/app/index.tsx` が `app/` の見本の画面と差し替える。接続設定がない画面と `app/` 単独では見本を表示する。実DB版の通信エラーでは見本へ切り替えない。募集のリンクは `#/list?r=<募集のID>`。アプリ版から共有するリンクの公開先は `EXPO_PUBLIC_APP_URL` |
+| 本人のSteamライブラリ | `src/lib/own-steam.ts` の `ownSteamLibrary`。`integration-api` の `steam-library` が認証済みの本人のSteam identityまたは本人の連携先だけを参照する。クライアントからSteamIDは指定しない |
 | Steamの信頼の目安 | `src/lib/trust.ts` の `steamTrustOf(userIds, gameIds)`。ログインなしで読める。アカウントの年数・Steamレベル・そのゲームを持っているか・プレイ時間（server-41）と最終取得成功時刻を返す。Steam連携の無い人は結果に入らない。`owned` は「持っている」か「分からない」だけで、「持っていない」とは返さない（EXT-Steam-2） |
 | 通知の有効化・タップ | `src/notifications/push.ts`。通知本文は最新の部屋情報の代わりに使わない |
 
 1. `src/app/dev/auth.tsx` を呼び出し例として読む。本番の画面デザインは①のコードで実装する。
-2. ログイン4方式と、Steam・Discordの任意連携を別の操作として表示する。Steamログインだけでライブラリを取得しない。Discordの任意連携ではIDと状態だけを表示し、名前・アイコンを表示しない。
+2. ログイン4方式と、Steam・Discordの任意連携を別の操作として表示する。Steamログイン後は本人の公開ライブラリを取得し、アカウント別の端末プロフィールへ反映する（2026-10-25の依頼による変更）。Steam以外でログインした人はSteamの任意連携後に取得する。Discordの任意連携ではIDと状態だけを表示し、名前・アイコンを表示しない。
 3. `lastSuccessAt` は成功した時刻。取得を試した時刻ではない。最終更新日時と相対表示を出す。7日を超えたら「7日以上前」、取得前は「まだ取得できていません」。実測0分と未取得を区別する。
 4. Googleの既知のアプリ内ブラウザでは `externalBrowserMessage` の案内を表示し、外部ブラウザへ進む導線を用意する。
 5. Webの `/auth/callback` と `/auth/link-callback`、ネイティブの同名deep linkを③の処理へ接続する。戻り先のコード交換を独自に二重実装しない。

@@ -6,9 +6,9 @@ import { readSteamLibrary, subscribeSteamLibrary } from './steam-library';
 import type { SteamLibrary } from '../../packages/integrations/src/steam';
 
 // Mounted inside StoreProvider only after the saved profile has loaded. It adds no UI.
-export function SteamProfileSync() {
+export function SteamProfileSync({ readLibrary = readSteamLibrary }: { readLibrary?: (signal: AbortSignal) => Promise<SteamLibrary | null> }) {
   const { s, editProfile, toast } = useStore();
-  const editing = !!s.draft || s.saving;
+  const editing = !!s.draft || s.saving || !!s.me.steamImportDisabled;
   useEffect(() => {
     if (Platform.OS !== 'web' || editing) return;
     let active = true;
@@ -21,7 +21,7 @@ export function SteamProfileSync() {
       request?.abort();
       const controller = new AbortController();
       request = controller;
-      void readSteamLibrary(controller.signal).then(library => {
+      void readLibrary(controller.signal).then(library => {
         if (library && !controller.signal.aborted) return save(library);
       }).catch(() => {
         if (active && !controller.signal.aborted) toast('Steamのゲームを取り込めませんでした。設定から再取得できます');
@@ -34,6 +34,6 @@ export function SteamProfileSync() {
     refresh();
     window.addEventListener('focus', refresh);
     return () => { active = false; request?.abort(); unsubscribe(); window.removeEventListener('focus', refresh); };
-  }, [editing, editProfile, toast]);
+  }, [editing, editProfile, toast, readLibrary]);
   return null;
 }

@@ -79,6 +79,7 @@ export type Hobby = { name: string; heat: number };
 export type Like = { name: string; locked?: boolean };
 export type Profile = {
   steamImportedAppIds?: number[];
+  steamImportDisabled?: boolean;
   steamDemoGamesCleared?: boolean;
   nickname: string;
   appId: string;

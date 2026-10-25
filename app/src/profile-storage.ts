@@ -23,6 +23,7 @@ function isProfile(value: unknown): value is Profile {
       && (game.steam === undefined || (object(game.steam) && (game.steam.hours === null || (typeof game.steam.hours === 'number' && Number.isFinite(game.steam.hours) && game.steam.hours >= 0)) && text(game.steam.updated)
         && (game.steam.appId === undefined || (Number.isSafeInteger(game.steam.appId) && Number(game.steam.appId) > 0))
         && (game.steam.name === undefined || text(game.steam.name)))))
+    && (value.steamImportDisabled === undefined || typeof value.steamImportDisabled === 'boolean')
     && (value.steamDemoGamesCleared === undefined || typeof value.steamDemoGamesCleared === 'boolean')
     && (value.steamImportedAppIds === undefined || (Array.isArray(value.steamImportedAppIds) && value.steamImportedAppIds.every(id => Number.isSafeInteger(id) && id > 0)))
     && Array.isArray(value.hobbies) && value.hobbies.every(item => object(item) && text(item.name) && level(item.heat, 0, 4))
@@ -34,7 +35,7 @@ export function decodeProfile(raw: string): Profile {
   return data.profile;
 }
 
-export function createProfileRepository(storage: ProfileStorage) {
+export function createProfileRepository(storage: ProfileStorage, storageKey = PROFILE_STORAGE_KEY) {
   let current = copy(ME);
   let loaded = false;
   let queue: Promise<unknown> = Promise.resolve();
@@ -46,7 +47,7 @@ export function createProfileRepository(storage: ProfileStorage) {
   }
   return {
     load: () => serial(async () => {
-      const raw = await storage.getItem(PROFILE_STORAGE_KEY);
+      const raw = await storage.getItem(storageKey);
       const profile = raw === null ? copy(ME) : decodeProfile(raw);
       for (const game of profile.games) {
         if (steamTag(game.tag, game.steam)) GAMES[game.tag] = { name: game.steam!.name!, join: 'room', colors: ['#5b6b7a', '#273747'] };
@@ -60,12 +61,12 @@ export function createProfileRepository(storage: ProfileStorage) {
       if (!loaded) throw new Error('Profile has not loaded');
       const next = copy(current);
       change(next);
-      await storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ version: 1, profile: next }));
+      await storage.setItem(storageKey, JSON.stringify({ version: 1, profile: next }));
       current = next;
       return copy(current);
     }),
     reset: () => serial(async () => {
-      await storage.removeItem(PROFILE_STORAGE_KEY);
+      await storage.removeItem(storageKey);
       current = copy(ME);
       loaded = true;
       return copy(current);

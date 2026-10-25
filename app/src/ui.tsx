@@ -1,6 +1,6 @@
 // 画面をまたいで使う部品
 import { useState, type ReactNode } from 'react';
-import { Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
+import { Image, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 import { GAMES, HEAT, SKILLS, type GameTag, type Person, type Profile } from './data';
@@ -212,13 +212,17 @@ export function Field(props: TextInputProps & { mono?: boolean }) {
 
 /* ---------- 小さな表示 ---------- */
 
-// デモには画像を同梱しない。実DBのゲーム画像は src/live/screens.tsx がIGDBから表示する。
-export function Art({ tag, size = 52, aspectRatio = 2 / 3 }: { tag: GameTag; size?: number; aspectRatio?: number }) {
+// 画像はIGDBの配信URLから表示し、読めない場合は元のプレースホルダーへ戻す。
+export function Art({ tag, size = 52, aspectRatio = 2 / 3, coverUrl }: { tag: GameTag; size?: number; aspectRatio?: number; coverUrl?: string }) {
   const { s } = useLayout();
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showCover = !!coverUrl && coverUrl !== failedUrl;
   return (
-    <View accessibilityLabel={`${GAMES[tag].name}：画像なし`}
+    <View accessibilityLabel={`${GAMES[tag].name}：${showCover ? 'IGDBのカバー画像' : '画像なし'}`}
       style={{ width: s(size), height: s(size / aspectRatio), flexShrink: 0, borderRadius: s(5), overflow: 'hidden', backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
-      <Feather name="image" size={s(20)} color={C.muted} />
+      {showCover ? <Image source={{ uri: coverUrl }} accessibilityLabel={`${GAMES[tag].name}のカバー画像（IGDB）`}
+        resizeMode="cover" onError={() => setFailedUrl(coverUrl!)} style={{ width: '100%', height: '100%' }} />
+        : <Feather name="image" size={s(20)} color={C.muted} />}
     </View>
   );
 }
