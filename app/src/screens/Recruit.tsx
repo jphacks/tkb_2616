@@ -286,7 +286,7 @@ export function RequestsScreen() {
         <Art tag={f.game} />
         <Stack gap={2} style={{ flex: 1 }}>
           <Txt size={16} weight="bold">{GAMES[f.game].name}</Txt>
-          <Note>{formatWhen(f.when, f.time)} ・ あと{f.need}人 ・ 成立 {matched.length}人</Note>
+          <Note>{formatWhen(f.when, f.time)} ・ あと{Math.max(0, f.need - matched.length)}人 ・ 成立 {matched.length}人</Note>
         </Stack>
         <Badge label={label} tone={tone} />
       </Row>

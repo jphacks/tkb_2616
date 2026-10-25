@@ -2,7 +2,7 @@
 
 [![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
 
-[趣味トモ](https://ichi-choken.github.io/tkb_2616/)
+[趣味トモ](https://tkb2616.expo.app/)
 
 ## 製品概要
 
