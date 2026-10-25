@@ -2,7 +2,9 @@
 
 - **本番環境**：https://tkb2616.expo.app
 - **モック版**（ログイン不要で全画面を体験できます）：https://ichi-choken.github.io/tkb_2616/
-- **紹介動画**：https://github.com/user-attachments/assets/caa63c27-0d29-4076-8d9e-dcddb73fb0aa
+- **紹介動画**：下の動画
+
+https://github.com/user-attachments/assets/caa63c27-0d29-4076-8d9e-dcddb73fb0aa
 
 
 ローカルで動かす場合（Node.js 24.3 以上）：
