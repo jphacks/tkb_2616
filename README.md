@@ -1,6 +1,6 @@
 # 趣味トモ
 
-[![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
+https://github.com/user-attachments/assets/027409e5-bfa2-487b-8551-1251681fd128
 
 - **本番環境**：https://tkb2616.expo.app
 - **モック版**（ログイン不要で全画面を体験できます）：https://ichi-choken.github.io/tkb_2616/
