@@ -48,12 +48,18 @@ export const GAMES: Record<GameTag, Game> = {
 
 // 候補に無いゲームを足す。名前から色を決める
 export function addCustomGame(name: string): GameTag {
-  const found = Object.keys(GAMES).find((t) => GAMES[t]?.name === name);
+  const found = Object.keys(GAMES).find((t) => !t.startsWith('igdb:') && GAMES[t]?.name === name);
   if (found) return found;
   const tag = `custom:${name}`;
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
   GAMES[tag] = { name, join: 'room', colors: [`hsl(${h}, 60%, 55%)`, `hsl(${(h + 40) % 360}, 55%, 30%)`] };
+  return tag;
+}
+
+export function registerIgdbGame(game: { id: number; name: string }): GameTag {
+  const tag = `igdb:${game.id}`;
+  GAMES[tag] = { name: game.name, join: 'room', colors: ['#5b6b7a', '#273747'] };
   return tag;
 }
 
@@ -73,6 +79,7 @@ export type MyGame = {
   platform: string;
   heat: number;
   skill: number;
+  igdb?: { id: number; name: string };
   steam?: { appId?: number; name?: string; hours: number | null; updated: string };
 };
 export type Hobby = { name: string; heat: number };

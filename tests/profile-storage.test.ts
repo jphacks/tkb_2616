@@ -91,3 +91,39 @@ test('corrupt or incompatible data is reported without overwriting it', async ()
     assert.equal(values.get(PROFILE_STORAGE_KEY), raw);
   }
 });
+
+
+test('chosen IGDB identity survives reload and distinguishes games with the same name', async () => {
+  const { storage } = memory();
+  const repo = createProfileRepository(storage);
+  await repo.load();
+  await repo.edit(profile => {
+    for (const id of [900001, 900002]) profile.games.push({
+      tag: `igdb:${id}`, igdb: { id, name: 'Same title' }, platform: 'その他', heat: 3, skill: 7,
+    });
+  });
+  delete GAMES['igdb:900001']; delete GAMES['igdb:900002'];
+  const restored = await createProfileRepository(storage).load();
+  const selected = restored.games.filter(g => g.igdb);
+  assert.equal(selected.length, 2);
+  assert.deepEqual(selected.map(g => g.igdb?.id), [900001, 900002]);
+  for (const game of selected) {
+    assert.equal(GAMES[game.tag]?.name, 'Same title');
+    assert.equal(game.steam, undefined);
+    assert.equal(game.heat, 3);
+    assert.equal(game.skill, 7);
+  }
+});
+
+test('invalid or mismatched IGDB identities are rejected on load', () => {
+  for (const igdb of [undefined, { id: 2, name: 'Wrong' }, { id: 1, name: '' }, { id: '1', name: 'Wrong type' }]) {
+    const profile = structuredClone(ME);
+    profile.games = [{ tag: 'igdb:1', platform: 'その他', heat: 2, skill: 5, igdb }] as typeof profile.games;
+    assert.throws(() => decodeProfile(JSON.stringify({ version: 1, profile })));
+  }
+});
+
+test('free text does not silently choose a same-named IGDB work', () => {
+  GAMES['igdb:900003'] = { name: 'Free text identity test', join: 'room', colors: ['#000', '#fff'] };
+  assert.equal(addCustomGame('Free text identity test'), 'custom:Free text identity test');
+});
