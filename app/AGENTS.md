@@ -10,24 +10,27 @@ Expo ships breaking changes every SDK release. APIs you remember are likely rena
 
 ## Commands
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+This repository uses npm and `package-lock.json`. Paths and commands below are relative to the repository root, not the `app/` directory. The root project runs the connected app; `app/` also has a standalone demo entry point.
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npm run setup               # install root and integration dependencies when needed
+npm run web                 # start the root web development server
+npm run typecheck           # root and stricter auth typechecks
+npm run typecheck:frontend  # shared frontend typecheck
+npm run check               # typechecks, tests, Edge checks, and web export
+npm run build:native        # export iOS/Android bundles when relevant
 ```
 
-Run lint and typecheck before declaring any task done.
+Use `npx expo install <package>` for Expo/React Native dependencies so versions match the installed SDK. Check which project owns the dependency before changing a package file.
+
+Use the repository's checks for code changes. There is currently no configured lint script or ESLint configuration; do not report lint as passing unless it was actually configured and run. Markdown-only changes should be checked for valid references, consistency with the code, and `git diff --check`.
 
 ## Navigation & Routing
 
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
+- The root Expo Router routes live in `src/app/`, including the auth callbacks and `_layout.tsx`. Keep non-route modules outside this directory and use Expo Router APIs for these routes.
+- `src/app/index.tsx` renders `ShumitomoApp` from `app/App.tsx`. The top-level `app/` directory is the shared frontend and standalone demo project; it is not the root project's Router route directory.
+- Main screens live in `app/src/screens/`. Their existing navigation uses `go`, `resolveRoute`, and route state in `app/src/store.tsx`; on Web this is synchronized with the URL hash. Use that navigation for the existing screens and preserve its behavior unless a routing migration is explicitly requested.
+- Docs for Router-managed routes: https://docs.expo.dev/router/introduction.md
 
 ## Building with EAS
 
