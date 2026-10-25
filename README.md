@@ -104,7 +104,7 @@ X や Discord に貼られた募集は、ふつうはその場所を見ている
 
 | 機能 | 状況 |
 | --- | --- |
-| 募集作成（招待状・コピー・X共有）、募集一覧、参加希望、承認、成立・合流情報 | 本番環境で稼働 |
+| 募集作成（招待状・コピー・X・Threads・LINE共有）、募集一覧、参加希望、承認、成立・合流情報 | 本番環境で稼働 |
 | Discord / Google / Steam ログイン、Steamライブラリの取り込み、信頼の目安、カバー画像、ゲーム検索 | 本番環境で稼働 |
 | プロフィール | 本番環境で稼働（端末に保存） |
 | フレンド募集・申請・承認・フレンド一覧 | 本番環境で稼働 |
@@ -132,7 +132,6 @@ X や Discord に貼られた募集は、ふつうはその場所を見ている
 * Supabase（PostgreSQL・Auth・Edge Functions・Realtime・pg_cron / pg_net）
 * Steam Web API（所持ゲーム・プレイ時間・レベル）、Steam OpenID（ログイン・連携）
 * Discord OAuth2 / Google ログイン（Supabase Auth）
-* Google（ログイン認証用）
 * IGDB API（Twitch OAuth）：ゲーム検索・カバー画像
 * Expo Push API（配信の仕組みのみ実装、未稼働）
 
