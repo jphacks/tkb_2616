@@ -36,7 +36,7 @@ const provider = {
   authorization_url: `${base}/authorize`,
   token_url: `${base}/token`,
   userinfo_url: `${base}/userinfo`,
-  // userinfo returns only the verified SteamID; Steam gives no email (documentation/auth-integrations.md)
+  // userinfo returns only the verified SteamID; Steam gives no email
   scopes: [],
   pkce_enabled: true,
   email_optional: true,
