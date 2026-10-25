@@ -107,6 +107,18 @@ X や Discord に貼られた募集は、ふつうはその場所を見ている
 
 ## 【開発技術】
 
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=flat&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-000020?style=flat&logo=expo&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Deno](https://img.shields.io/badge/Deno-000000?style=flat&logo=deno&logoColor=white)
+![Steam](https://img.shields.io/badge/Steam-000000?style=flat&logo=steam&logoColor=white)
+![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)
+![Google](https://img.shields.io/badge/Google-4285F4?style=flat&logo=google&logoColor=white)
+![IGDB](https://img.shields.io/badge/IGDB-9147FF?style=flat&logo=igdb&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=githubactions&logoColor=white)
+
 ### 活用した技術
 
 #### API・データ
