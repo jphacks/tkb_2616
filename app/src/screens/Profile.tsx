@@ -7,6 +7,7 @@ import {
   hasNgWord, isPersonId, isTime, type MyGame, type Person, type PersonId, type Profile,
 } from '../data';
 import { useStore } from '../store';
+import { profileCover } from '../profile-game-covers';
 import { demoSettings } from '../demo-settings';
 import { steamProfileVisible } from '../demo-settings-state';
 import { AddModal, type AddKind } from '../AddModal';
@@ -25,7 +26,7 @@ export function ProfileScreen() {
 }
 
 function ProfileView() {
-  const { s: st, update, editProfile, go, copy, toast } = useStore();
+  const { s: st, update, editProfile, go, copy, toast, open } = useStore();
   const settings = useSyncExternalStore(demoSettings.subscribe, demoSettings.getSnapshot, demoSettings.getSnapshot);
   const [adding, setAdding] = useState<AddKind | null>(null);
   const { wide, s, design } = useLayout();
@@ -142,6 +143,7 @@ function ProfileView() {
         </View>
       </Card>
       {p.games.some(game => game.steam?.appId) ? <Note>Steamの実力・熱量は初期値から変更できます。</Note> : null}
+      {p.games.some(game => profileCover(GAMES[game.tag].name)) ? <TextButton label="ゲーム画像：IGDB.com" onPress={() => open('https://www.igdb.com/')} /> : null}
       <Block title="ゲーム" count={p.games.length} right={<MiniButton label="＋ 追加" onPress={() => setAdding('games')} />}>
         {p.games.length ? <Stack gap={10}>{p.games.map((g) => (
           <GameCard key={g.tag} g={g} showSteam={g.steam?.appId ? settings.steamShow.games : steamProfileVisible(settings)}
@@ -213,7 +215,7 @@ function GameCard({ g, onRecruit, onSkill, onHeat, actions, showSteam = true }: 
     <>
       <Card style={{ paddingVertical: s(12), paddingHorizontal: s(12) }}>
         <Row gap={12}>
-          <Art tag={g.tag} size={artWidth} aspectRatio={2.1} />
+          <Art tag={g.tag} size={artWidth} aspectRatio={2.1} coverUrl={profileCover(gameName)?.imageUrl} />
           <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
             <Row gap={4} style={{ alignItems: 'flex-start' }}>
               <Txt size={16} weight="bold" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>{gameName}</Txt>
