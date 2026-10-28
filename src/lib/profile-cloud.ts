@@ -111,6 +111,7 @@ const REASONS: Record<string, string> = {
   profile_invalid: '入れられない内容があります。名前の長さや、熱量・実力を確かめてください',
   app_id_invalid: 'アプリIDは英数字と _ の3〜20文字で入れてください',
   app_id_taken: 'そのアプリIDは、ほかの人が使っています',
+  ng_word: '名前に入れられない言葉があります',
 };
 const failed = (reason: string) => new ProfileSaveError(REASONS[reason] ?? 'プロフィールを保存できませんでした');
 

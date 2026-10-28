@@ -116,6 +116,7 @@ const { data: mine } = await supabase
 | `profile_invalid` | ゲーム・趣味・好きなものの中身が決まりに合わない（名前が空か41文字以上、熱量・実力の範囲外、機種が選択肢に無い、`games` に無い IGDB のゲームなど）。どの部分も保存しない |
 | `app_id_invalid` | アプリIDの形が違う |
 | `app_id_taken` | アプリIDが、ほかの人に使われている |
+| `ng_word` | ニックネーム・アプリID・趣味・好きなもの・自分で足したゲームの名前に、入れられない言葉（`line`・`@`・`http`・`discord.gg`・`insta`。大文字も同じ。app-24）がある。言葉は画面の `NG_WORDS`（`app/src/data.ts`）と同じで、変えるときは両方を変える。IGDB や Steam から来たゲームの名前は確かめない |
 
 ### 画面の更新を受ける
 
