@@ -357,16 +357,102 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"profiles": {
+                },"profile_games": {
                   Row: {
-                    "app_id": string | null,"created_at": string,"id": string,"nickname": string | null,"region": Database["public"]['Enums']["region"] | null,"updated_at": string,"usual_time_end": string | null,"usual_time_start": string | null
+                    "game_id": number | null,"heat": number,"name": string,"platform": string,"position": number,"skill": number,"steam_app_id": number | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "app_id"?: string | null,"created_at"?: string,"id": string,"nickname"?: string | null,"region"?: Database["public"]['Enums']["region"] | null,"updated_at"?: string,"usual_time_end"?: string | null,"usual_time_start"?: string | null
+                    "game_id"?: number | null,"heat": number,"name": string,"platform": string,"position": number,"skill": number,"steam_app_id"?: number | null,"user_id": string
                   }
                   Update: {
-                    "app_id"?: string | null,"created_at"?: string,"id"?: string,"nickname"?: string | null,"region"?: Database["public"]['Enums']["region"] | null,"updated_at"?: string,"usual_time_end"?: string | null,"usual_time_start"?: string | null
+                    "game_id"?: number | null,"heat"?: number,"name"?: string,"platform"?: string,"position"?: number,"skill"?: number,"steam_app_id"?: number | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_games_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profile_games_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_hobbies": {
+                  Row: {
+                    "heat": number,"name": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "heat": number,"name": string,"position": number,"user_id": string
+                  }
+                  Update: {
+                    "heat"?: number,"name"?: string,"position"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_hobbies_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_likes": {
+                  Row: {
+                    "name": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "name": string,"position": number,"user_id": string
+                  }
+                  Update: {
+                    "name"?: string,"position"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_likes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profile_locked_likes": {
+                  Row: {
+                    "name": string,"position": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "name": string,"position": number,"user_id": string
+                  }
+                  Update: {
+                    "name"?: string,"position"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profile_locked_likes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "app_id": string | null,"color": string | null,"created_at": string,"id": string,"nickname": string | null,"region": Database["public"]['Enums']["region"] | null,"updated_at": string,"usual_time_end": string | null,"usual_time_start": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "app_id"?: string | null,"color"?: string | null,"created_at"?: string,"id": string,"nickname"?: string | null,"region"?: Database["public"]['Enums']["region"] | null,"updated_at"?: string,"usual_time_end"?: string | null,"usual_time_start"?: string | null
+                  }
+                  Update: {
+                    "app_id"?: string | null,"color"?: string | null,"created_at"?: string,"id"?: string,"nickname"?: string | null,"region"?: Database["public"]['Enums']["region"] | null,"updated_at"?: string,"usual_time_end"?: string | null,"usual_time_start"?: string | null
                   }
                   Relationships: [
                     
@@ -464,6 +550,12 @@ isOneToOne: false
 "matched_count":
 { Args: { "r": Omit<Database["public"]['Tables']["recruitments"]['Row'], Database["public"]['Tables']["recruitments"]['ComputedFields']> }; Returns: number
                            },
+"my_profile":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"profile_by_app_id":
+{ Args: { "p_app_id": string }; Returns: Json
+                           },
 "publish_friend_recruitment":
 { Args: { "p_available_from": string,"p_available_to": string,"p_enthusiasm": number,"p_game_id": number,"p_nickname": string,"p_op_id": string,"p_platform": string,"p_skill": number }; Returns: Json
                            },
@@ -508,6 +600,12 @@ isOneToOne: false
                            },
 "request_friendship":
 { Args: { "p_nickname": string,"p_op_id": string,"p_recruitment_id": string }; Returns: Json
+                           },
+"save_profile":
+{ Args: { "p_op_id": string,"p_profile": Json }; Returns: Json
+                           },
+"set_app_id":
+{ Args: { "p_app_id": string,"p_op_id": string }; Returns: Json
                            },
 "state":
 { Args: { "a": Omit<Database["public"]['Tables']["applications"]['Row'], Database["public"]['Tables']["applications"]['ComputedFields']> }; Returns: Database["public"]['Enums']["application_state"]

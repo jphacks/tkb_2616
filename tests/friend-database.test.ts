@@ -21,7 +21,8 @@ async function fixture(withFriends = true) {
     create publication supabase_realtime;`);
   const files = (await readdir(migrations)).filter(f => f.endsWith('.sql')).sort();
   const friendMigration = files.find(f => f.endsWith('_friend_recruitment.sql'))!;
-  for (const f of files) if (withFriends || f !== friendMigration) await db.exec(await readFile(new URL(f, migrations), 'utf8'));
+  // Without friends, stop before the friend migration: later migrations may depend on its tables.
+  for (const f of files) if (withFriends || f < friendMigration) await db.exec(await readFile(new URL(f, migrations), 'utf8'));
   await db.exec(await readFile(new URL('../supabase/seed.sql', import.meta.url), 'utf8'));
   const owner = randomUUID(), sender = randomUUID(), other = randomUUID();
   await db.query('insert into auth.users(id) values ($1),($2),($3)', [owner, sender, other]);

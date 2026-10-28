@@ -44,6 +44,20 @@ Supabaseを設定しないローカル版では、新画面を「ローカル実
 | `application_game_ids` 参加者のゲーム内ID | 本人と、募集する人。募集する人に見えるのは、成立した人の分と、承認待ちの人の分（承認の前にIDを確かめられるように。server-28、ADR-90）。開催中止・遊び終了の後は誰も読めない | |
 | `notifications` 知らせ | 宛先の本人 | |
 | `profiles`・`games` | だれでも。`games` の `modes`（そのゲームでよく使う条件）と `needs_participant_id_default`（参加する人のIDが要るかの初期値）は、中身を作ったゲームだけが持つ（server-10）。null なら、モードの欄を出さない（recruit-15） | |
+| `profile_games`・`profile_hobbies`・`profile_likes` プロフィールのゲーム・趣味・好きなもの | だれでも | |
+| `profile_locked_likes` 鍵をかけた好きなもの | 本人と、フレンドだけ（server-17、profile-18） | |
+
+プロフィールは、表を1つずつ読むより、1つの JSON で返す関数を使う。鍵をかけた好きなものは、見ている人が本人かフレンドのときだけ `likes` に入る（`locked: true`）。
+
+```ts
+// プロフィールのリンク・「IDで探す」（profile-13）。ログインなしでも読める。無ければ null
+const { data: profile } = await supabase.rpc('profile_by_app_id', { p_app_id: appId });
+// 自分のプロフィール（ログインしている本人だけ）。アプリIDをまだ持たなくても読める
+const { data: mine } = await supabase.rpc('my_profile');
+// どちらも次の形：{ app_id, nickname, region, usual_time_start, usual_time_end, color, is_self, is_friend,
+//   games: [{ game_id, steam_app_id, name, platform, heat, skill, cover_image_id }],
+//   hobbies: [{ name, heat }], likes: [{ name, locked }] }
+```
 
 状態の名前は、仕様の「募集」「参加希望と成立」の表の状態と同じ文字列（`出ている`、`満員で終了`、`待っている`、`成立` など）。
 
@@ -72,7 +86,9 @@ const { data: mine } = await supabase
 | `update_meeting` | 入る場所・招待URLを入れる・変える（募集する人だけ）。`null` は変えない、空文字は消す |
 | `change_recruitment` | `p_action` が `close`（受付を終える）・`cancel`（開催を中止する）・`start_play`（遊び始める）・`end_play`（遊び終える） |
 | `reopen_with_more_capacity` | 受付が終わった募集を、人数を増やして再開する（募集する人だけ。recruit-23）。開始時刻を過ぎていれば `追加受付中` になる（requests-26） |
-| `update_profile` | 自分のニックネーム・住んでいる地方・いつも遊ぶ時間帯を保存する。渡した値でそのまま置き換え、`null` は消す。アプリIDは Q-25 が決まるまで変えない |
+| `update_profile` | 自分のニックネーム・住んでいる地方・いつも遊ぶ時間帯だけを保存する。渡した値でそのまま置き換え、`null` は消す。画面が `save_profile` に移ったら使わない |
+| `save_profile` | 自分のプロフィールを丸ごと保存する（`p_profile` に `nickname`・`region`・`usual_time_start`・`usual_time_end`・`color`・`games`・`hobbies`・`likes`）。ゲーム・趣味・好きなものは、渡した配列の順で入れ替わる。熱量は 1〜5（ゆるい〜ガチ）、実力は 1〜9。IGDB のゲームは、先に `games` に入れておく。アプリIDがまだ無ければ8文字を付け、`app_id` で返す。匿名のログインでは使えない。Steam のプレイ時間は送らない（保存しない） |
+| `set_app_id` | 自分のアプリIDを変える。英小文字・数字・`_` の3〜20文字で、大文字は小文字にする。古いアプリIDのリンクは開けなくなる。匿名のログインでは使えない |
 
 約束：
 
@@ -92,7 +108,14 @@ const { data: mine } = await supabase
 | `unknown_mode` | そのゲームの選択肢に無いモード（中身の無いゲームでは、モードを入れられない） |
 | `not_reopenable` | 再開できない（受付中、人数指定が無い、人数が増えていない、成立人数以下、開催中止・遊び終了の後） |
 | `usual_time_incomplete` | いつも遊ぶ時間帯の、始まりか終わりの片方だけ |
-| `nickname_invalid` | ニックネームに改行が入っている |
+| `nickname_invalid` | ニックネームに改行が入っている（`save_profile` では、21文字以上も） |
+| `region_invalid` | 住んでいる地方の区分に無い値 |
+| `usual_time_invalid` | いつも遊ぶ時間帯が `HH:MM` の形でない（終わりだけ `24:00` を使える） |
+| `color_invalid` | 色が `#` と16進6桁でない |
+| `too_many_items` | ゲーム50件・趣味20件・好きなもの30件を超えている |
+| `profile_invalid` | ゲーム・趣味・好きなものの中身が決まりに合わない（名前が空か41文字以上、熱量・実力の範囲外、機種が選択肢に無い、`games` に無い IGDB のゲームなど）。どの部分も保存しない |
+| `app_id_invalid` | アプリIDの形が違う |
+| `app_id_taken` | アプリIDが、ほかの人に使われている |
 
 ### 画面の更新を受ける
 
