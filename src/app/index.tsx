@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ShumitomoApp } from '../../app/App';
 import { SettingsScreen } from '../../app/src/screens/Settings';
 import { ConnectedSettingsScreen } from '../settings/ConnectedSettings';
@@ -11,6 +11,8 @@ import { ownSteamLibrary } from '../lib/own-steam';
 import { cloudGameCatalog, localGameCatalog } from '../lib/profile-game-catalog';
 import { cloudProfileCovers, localProfileCovers } from '../lib/profile-covers';
 import { useLocalIntegrations } from '../local/useLocalIntegrations';
+import { cloudProfileRepository } from '../lib/profile-cloud-live';
+import { LivePersonScreen, LiveSearchIdScreen } from '../live/profile-screens';
 
 function LocalSettings() {
   return <SettingsScreen accountPanel={<SteamPreview />} steamOnly />;
@@ -25,9 +27,12 @@ function CloudSteamProfileSync() {
 
 // Enable the connected screen only after its migration has been applied.
 // Local recording and tests always use the new screen; deploys without the new schema keep their current tab.
-const connectedScreens = process.env.EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT === 'true'
-  ? liveScreens
-  : { ...liveScreens, connections: undefined };
+const connectedScreens = {
+  ...(process.env.EXPO_PUBLIC_ENABLE_FRIEND_RECRUITMENT === 'true' ? liveScreens : { ...liveScreens, connections: undefined }),
+  // Profiles open from a link or an app ID, signed in or not (profile-10, profile-13)
+  person: LivePersonScreen,
+  'search-id': LiveSearchIdScreen,
+};
 
 export default function Home() {
   const local = useLocalIntegrations();
@@ -44,6 +49,11 @@ export default function Home() {
     });
     return () => subscription.unsubscribe();
   }, [configured]);
+  // A signed-in account keeps its profile in the database; before sign-in it stays on this device
+  const profileRepository = useMemo(
+    () => (configured && account.userId ? cloudProfileRepository(getSupabase()!, account.userId) : undefined),
+    [configured, account.userId],
+  );
   if (configured && !account.ready) return null;
   // Only implemented DB screens replace their demo counterparts. A failed DB request
   // remains an error on the real screen; it must never look like a successful demo write.
@@ -52,6 +62,7 @@ export default function Home() {
     gameCatalog={configured ? cloudGameCatalog : local ? localGameCatalog : undefined}
     readProfileCovers={configured ? cloudProfileCovers : local ? localProfileCovers : undefined}
     profileStorageKey={configured ? `shumitomo.profile.v1:${account.userId ?? 'guest'}` : undefined}
+    profileRepository={profileRepository}
     integration={configured ? (account.userId ? CloudSteamProfileSync : undefined) : local ? SteamProfileSync : undefined}
     settingsScreen={configured ? (local ? SteamOnlyConnectedSettings : ConnectedSettingsScreen) : invalid ? ConnectedSettingsScreen : local ? LocalSettings : SettingsScreen}
     liveScreens={configured ? connectedScreens : { connections: FriendConnectionsScreen }}

@@ -14,6 +14,7 @@ import { GameCatalogContext } from './src/GameCatalog';
 import type { GameCatalog } from './src/game-catalog';
 import { ProfileCoverReader } from './src/ProfileCovers';
 import type { ReadProfileCovers } from './src/profile-game-covers';
+import type { ProfileRepository } from './src/profile-storage';
 import { C, useLayout } from './src/theme';
 import { Badge, Row, Txt } from './src/ui';
 import { DesignSwitcher } from './src/DesignSwitcher';
@@ -27,12 +28,12 @@ export default function App() {
   return <ShumitomoApp />;
 }
 
-// 接続先があるとき、募集・一覧・参加の画面を本物のデータの画面に差し替える（ルートの src/live/screens.tsx）
-export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched' | 'connections', ComponentType<{ params: Record<string, string> }>>>;
+// 接続先があるとき、募集・一覧・参加・他の人のプロフィールの画面を本物のデータの画面に差し替える（ルートの src/live/）
+export type LiveScreens = Partial<Record<'recruit' | 'create' | 'requests' | 'list' | 'matched' | 'connections' | 'person' | 'search-id', ComponentType<{ params: Record<string, string> }>>>;
 
 type ScreenOptions = { settingsScreen: ComponentType; liveScreens?: LiveScreens; modeLabel?: string };
 
-export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey, readProfileCovers, gameCatalog }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string; readProfileCovers?: ReadProfileCovers; gameCatalog?: GameCatalog }) {
+export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, modeLabel, integration: Integration, profileStorageKey, profileRepository, readProfileCovers, gameCatalog }: Omit<ScreenOptions, 'settingsScreen'> & { settingsScreen?: ComponentType; integration?: ComponentType; profileStorageKey?: string; profileRepository?: ProfileRepository; readProfileCovers?: ReadProfileCovers; gameCatalog?: GameCatalog }) {
   const { design } = useLayout();
   const [loaded] = useFonts({
     DelaGothicOne_400Regular,
@@ -45,7 +46,7 @@ export function ShumitomoApp({ settingsScreen = SettingsScreen, liveScreens, mod
     <SafeAreaProvider>
       <GameCatalogContext.Provider value={gameCatalog}>
       <ProfileCoverReader.Provider value={readProfileCovers}>
-        <StoreProvider profileStorageKey={profileStorageKey}>
+        <StoreProvider profileStorageKey={profileStorageKey} profileRepository={profileRepository}>
           {Integration ? <Integration /> : null}
           <Shell settingsScreen={settingsScreen} liveScreens={liveScreens} modeLabel={modeLabel} />
           <StatusBar style={design.dark ? 'light' : 'dark'} />

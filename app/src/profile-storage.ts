@@ -37,7 +37,15 @@ export function decodeProfile(raw: string): Profile {
   return data.profile;
 }
 
-export function createProfileRepository(storage: ProfileStorage, storageKey = PROFILE_STORAGE_KEY) {
+// 保存先。device：この端末（デモ・ログイン前）、account：ログインしたアカウント（ルートの src/lib/profile-cloud.ts）
+export type ProfileRepository = {
+  target: 'device' | 'account';
+  load: () => Promise<Profile>;
+  edit: (change: (profile: Profile) => void) => Promise<Profile>;
+  reset: () => Promise<Profile>;
+};
+
+export function createProfileRepository(storage: ProfileStorage, storageKey = PROFILE_STORAGE_KEY): ProfileRepository {
   let current = copy(ME);
   let loaded = false;
   let queue: Promise<unknown> = Promise.resolve();
@@ -48,6 +56,7 @@ export function createProfileRepository(storage: ProfileStorage, storageKey = PR
     return result;
   }
   return {
+    target: 'device',
     load: () => serial(async () => {
       const raw = await storage.getItem(storageKey);
       const profile = raw === null ? copy(ME) : decodeProfile(raw);

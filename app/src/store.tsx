@@ -1,8 +1,8 @@
-// プロフィールは端末内に保存。募集などの共有操作は引き続きデモ。
+// プロフィールは端末内に保存（ログイン中はアカウントに保存する repository を渡される）。募集などの共有操作は引き続きデモ。
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Pressable, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createProfileRepository } from './profile-storage';
+import { createProfileRepository, type ProfileRepository } from './profile-storage';
 import * as Clipboard from 'expo-clipboard';
 import { formatWhen, todayISO } from './dates';
 import { clearSaved, loadSaved, saveState } from './saved';
@@ -183,13 +183,15 @@ type Store = {
   confirm: (message: string) => Promise<boolean>;
   reset: () => Promise<boolean>;
   editProfile: (change: (profile: Profile) => void) => Promise<boolean>;
+  // プロフィールの保存先（この端末か、ログインしたアカウントか）
+  profileTarget: ProfileRepository['target'];
   saveGameToProfile: (f: Pick<RecruitForm, 'game' | 'platform' | 'heat' | 'skill'>) => Promise<boolean>;
   publish: (via: 'x' | 'threads' | 'line' | 'copy' | 'none') => Promise<void>;
 };
 
 const StoreContext = createContext<Store | null>(null);
 
-export function StoreProvider({ children, profileStorageKey }: { children: ReactNode; profileStorageKey?: string }) {
+export function StoreProvider({ children, profileStorageKey, profileRepository }: { children: ReactNode; profileStorageKey?: string; profileRepository?: ProfileRepository }) {
   // この端末に残っていれば、前の続きから始める（saved.ts）。プロフィールは profile-storage から読む
   const [initial] = useState(() => {
     const fresh = freshState(isWeb ? hashToRoute(window.location.hash) : undefined);
@@ -198,7 +200,7 @@ export function StoreProvider({ children, profileStorageKey }: { children: React
   });
   const restored = useRef(initial.restored);
   const [s, setS] = useState<State>(initial.state);
-  const [profiles] = useState(() => createProfileRepository(AsyncStorage, profileStorageKey));
+  const [profiles] = useState(() => profileRepository ?? createProfileRepository(AsyncStorage, profileStorageKey));
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -235,8 +237,10 @@ export function StoreProvider({ children, profileStorageKey }: { children: React
       const profile = await profiles.edit(change);
       update(d => { d.me = profile; });
       return true;
-    } catch {
-      toast('この端末に保存できませんでした。もう一度お試しください');
+    } catch (error) {
+      // アカウントへの保存では、受け付けなかった理由を出す（src/lib/profile-cloud.ts の ProfileSaveError）
+      const reason = error instanceof Error && 'userMessage' in error ? String((error as { userMessage: unknown }).userMessage) : null;
+      toast(reason ?? (profiles.target === 'account' ? 'プロフィールを保存できませんでした。もう一度お試しください' : 'この端末に保存できませんでした。もう一度お試しください'));
       return false;
     }
   }, [profiles, update, toast]);
@@ -359,8 +363,8 @@ export function StoreProvider({ children, profileStorageKey }: { children: React
   }, [s.rec.form, s.rec.parts, toast, update, open, copy, go, saveGameToProfile]);
 
   const value = useMemo<Store>(() => ({
-    s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, publish,
-  }), [s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, saveGameToProfile, publish]);
+    s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, profileTarget: profiles.target, saveGameToProfile, publish,
+  }), [s, update, go, toast, toastText, copy, open, confirm, reset, editProfile, profiles.target, saveGameToProfile, publish]);
 
   if (!ready) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16, backgroundColor: '#fff9e9' }}>
     <Text>{loadError ? '保存したプロフィールを読み込めませんでした。保存内容は上書きしていません。' : '保存したプロフィールを読み込んでいます…'}</Text>

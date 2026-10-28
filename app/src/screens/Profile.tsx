@@ -1,7 +1,7 @@
 import { useIgdbProfileCovers } from '../IgdbProfileCovers';
 // プロフィール：自分のプロフィール、編集、他の人のプロフィール、IDで探す
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import {
   GAMES, HEAT, PEOPLE, PLATFORMS, REGION_OPTIONS,
@@ -19,6 +19,14 @@ import {
   MiniButton, Note, Opts, PillButton, Row, SkillSlider, Stack, SubButton, TextButton, Trust, Txt,
 } from '../ui';
 
+// プロフィールのリンク（profile-10、profile-11）。今開いているアドレスに、他の人のプロフィールの画面（#/person）を付ける
+export function profileUrl(appId: string) {
+  const base = Platform.OS === 'web' && typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}`
+    : process.env.EXPO_PUBLIC_APP_URL ?? 'https://tkb2616.expo.app/';
+  return `${base.replace(/\/?$/, '/')}#/person?id=${encodeURIComponent(appId)}`;
+}
+
 /* ---------- 自分のプロフィール ---------- */
 
 export function ProfileScreen() {
@@ -27,7 +35,7 @@ export function ProfileScreen() {
 }
 
 function ProfileView() {
-  const { s: st, update, editProfile, go, copy, toast, open } = useStore();
+  const { s: st, update, editProfile, go, copy, toast, open, profileTarget } = useStore();
   const settings = useSyncExternalStore(demoSettings.subscribe, demoSettings.getSnapshot, demoSettings.getSnapshot);
   const [adding, setAdding] = useState<AddKind | null>(null);
   const { wide, s, design } = useLayout();
@@ -128,20 +136,20 @@ function ProfileView() {
           <Stack gap={10} style={{ flex: wide ? 1 : undefined, minWidth: 0 }}>
             <Row gap={12}>
               <Avatar p={p} />
-              <Txt size={design.id === 'play' ? 22 : 24} weight="display" style={{ flex: 1, minWidth: 0 }}>{p.nickname}</Txt>
+              <Txt size={design.id === 'play' ? 22 : 24} weight="display" style={{ flex: 1, minWidth: 0 }}>{p.nickname || 'ニックネーム未設定'}</Txt>
               <MiniButton label="編集" onPress={() => update((d) => { d.draft = JSON.parse(JSON.stringify(d.me)); d.saveError = false; })} />
             </Row>
             <Row gap={6} wrap>
               <Note>アプリID</Note>
-              <Txt size={14} weight="bold">{p.appId}</Txt>
+              <Txt size={14} weight="bold">{p.appId || '初めて保存すると決まります'}</Txt>
               <View style={{ flex: 1 }} />
-              <MiniButton label="リンクをコピー" onPress={() => copy(`https://shumitomo.jp/${p.appId}`, 'プロフィールのリンクをコピーしました')} />
+              {p.appId ? <MiniButton label="リンクをコピー" onPress={() => copy(profileUrl(p.appId), 'プロフィールのリンクをコピーしました')} /> : null}
             </Row>
           </Stack>
           <View style={{ backgroundColor: C.line, ...(wide ? { width: 1 } : { height: 1 }) }} />
           <Stack gap={10} style={{ flex: wide ? 1 : undefined, minWidth: 0, justifyContent: 'center' }}>
             <TimesCard times={p.times} region={p.region} embedded />
-            <Note>変更はこの端末に保存されます</Note>
+            <Note>{profileTarget === 'account' ? '変更はアカウントに保存され、リンクを開いた人に見えます' : '変更はこの端末に保存されます'}</Note>
           </Stack>
         </View>
       </Card>
@@ -199,7 +207,7 @@ function TimesCard({ times, region, embedded }: { times: { start: string; end: s
   const content = <Row gap={10}>
     <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
       <Row gap={4}><Feather name="clock" size={s(13)} color={C.accent} /><Txt size={12} color={C.muted}>遊ぶ時間帯</Txt></Row>
-      <Txt size={14} weight="bold">{times.start}〜{times.end}</Txt>
+      <Txt size={14} weight="bold">{times.start ? `${times.start}〜${times.end}` : '未設定'}</Txt>
     </Stack>
     <View style={{ height: s(36), width: 1, backgroundColor: C.line }} />
     <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
@@ -293,9 +301,10 @@ function LikePrivacyButton({ name, locked, onPress, disabled }: { name: string; 
 /* ---------- 編集 ---------- */
 
 function ProfileEdit() {
-  const { s: st, update, editProfile, toast } = useStore();
+  const { s: st, update, editProfile, toast, profileTarget } = useStore();
   const { s, wide } = useLayout();
   const p = st.draft!;
+  const account = profileTarget === 'account';
   const [adding, setAdding] = useState<AddKind | null>(null);
   const set = (fn: (d: NonNullable<typeof st.draft>) => void) => update((d) => { if (d.draft) fn(d.draft); });
   // 遊ぶ時間帯の欄。72（文字が切れない幅）から始め、空きがあれば 76 まで広がる。
@@ -305,12 +314,14 @@ function ProfileEdit() {
   const save = async () => {
     if (!p.nickname.trim()) return toast('ニックネームを入れてください');
     if (hasNgWord(p.nickname) || hasNgWord(p.appId)) return toast('名前に入れられない言葉があります');
-    if (!/^[A-Za-z0-9_]+$/.test(p.appId)) return toast('アプリIDは英数字と _ で入れてください');
-    if (!isTime(p.times.start) || !isTime(p.times.end)) return toast('時間帯は 21:00 のように入れてください');
+    // アカウントでは、アプリIDが空なら保存のときに自動で決まる（save_profile）
+    if (!(account && !p.appId) && !/^[A-Za-z0-9_]{3,20}$/.test(p.appId)) return toast('アプリIDは英数字と _ の3〜20文字で入れてください');
+    const noTimes = !p.times.start && !p.times.end;
+    if (!noTimes && (!isTime(p.times.start) || !isTime(p.times.end))) return toast('時間帯は 21:00 のように入れてください');
     update((d) => { d.saving = true; d.saveError = false; });
     const saved = await editProfile(profile => { Object.assign(profile, JSON.parse(JSON.stringify(p))); });
     update(d => { d.saving = false; d.saveError = !saved; if (saved) d.draft = null; });
-    if (saved) toast('この端末に保存しました');
+    if (saved) toast(account ? 'プロフィールを保存しました' : 'この端末に保存しました');
   };
 
   const formRow = (label: string, body: React.ReactNode) => (
@@ -329,8 +340,8 @@ function ProfileEdit() {
             {formRow('ニックネーム', <Field value={p.nickname} maxLength={16} onChangeText={(v) => set((d) => { d.nickname = v; })} />)}
             <Divider />
             {formRow('アプリID', <>
-              <Field value={p.appId} maxLength={16} autoCapitalize="none" autoCorrect={false} onChangeText={(v) => set((d) => { d.appId = v; })} />
-              <Note>プロフィールの短いURLになります（shumitomo.jp/{p.appId || 'id'}）</Note>
+              <Field value={p.appId} maxLength={20} autoCapitalize="none" autoCorrect={false} onChangeText={(v) => set((d) => { d.appId = v; })} />
+              <Note>プロフィールのリンクになります（{profileUrl(p.appId || 'id')}）</Note>
               <Note color={C.warn}>ゲーム内IDやSNSの名前とは別にしておくと安心です</Note>
             </>)}
             <Divider />
@@ -415,33 +426,46 @@ function ProfileEdit() {
 export function PersonScreen({ id }: { id?: string }) {
   const { s: st, update, go, toast } = useStore();
   const p = isPersonId(id) ? PEOPLE[id] : null;
-  if (!p) {
-    return (
-      <Stack>
-        <AppBar title="プロフィール" onBack={() => go('profile')} />
-        <Card><Empty title="ページが見つかりません" text="アプリIDをもう一度確かめてください。" button={{ label: 'IDで探す', onPress: () => go('search-id') }} /></Card>
-      </Stack>
-    );
-  }
+  if (!p) return <PersonMissing />;
   const pid = id as PersonId;
+  const isFriend = st.conn.friends.includes(pid);
+  const sent = st.conn.sentTo.includes(pid);
+  return <PersonView p={p} onBack={() => go('connections')} right={isFriend ? <Txt size={12} weight="bold" color={C.ok}>フレンド</Txt> : (
+    // 他の人のプロフィールから、そのままフレンド申請を送れる（profile-15）
+    <PillButton label={sent ? '申請しました' : 'フレンド申請'} disabled={sent}
+      onPress={() => { update((d) => { d.conn.sentTo.push(pid); }); toast('フレンド申請を送りました'); }} />
+  )} />;
+}
+
+export function PersonMissing() {
+  const { go } = useStore();
+  return (
+    <Stack>
+      <AppBar title="プロフィール" onBack={() => go('profile')} />
+      <Card><Empty title="ページが見つかりません" text="アプリIDをもう一度確かめてください。" button={{ label: 'IDで探す', onPress: () => go('search-id') }} /></Card>
+    </Stack>
+  );
+}
+
+// 他の人のプロフィールの見た目。デモ（PEOPLE）でも、データベースから引いたプロフィール（src/live/profile-screens.tsx）でも使う
+// showLocked：鍵をかけた好きなものも見せる（本人とフレンドだけ。server-17）
+export function PersonView({ p, onBack, right, coverUrlOf, showLocked = false }: {
+  p: Person; onBack: () => void; right?: React.ReactNode; coverUrlOf?: (g: MyGame) => string | undefined; showLocked?: boolean;
+}) {
+  const { s: st } = useStore();
   const me = st.me;
   // あなたと同じ（profile-14）：同じゲームと相手の熱量、同じ趣味、鍵のない同じ好きなもの
   const sameGames = p.games.filter((g) => me.games.some((m) => m.tag === g.tag));
   const sameHobbies = p.hobbies.filter((h) => me.hobbies.some((m) => m.name === h.name));
   const sameLikes = p.likes.filter((l) => !l.locked && me.likes.some((m) => m.name === l.name));
-  const isFriend = st.conn.friends.includes(pid);
-  const sent = st.conn.sentTo.includes(pid);
+  const likes = p.likes.filter((l) => showLocked || !l.locked);
 
   return (
     <Stack>
-      <AppBar title={p.nickname} onBack={() => go('connections')} />
+      <AppBar title={p.nickname || 'プロフィール'} onBack={onBack} />
       <Cols
         left={<>
-          <WhoCard p={p} right={isFriend ? <Txt size={12} weight="bold" color={C.ok}>フレンド</Txt> : (
-            // 他の人のプロフィールから、そのままフレンド申請を送れる（profile-15）
-            <PillButton label={sent ? '申請しました' : 'フレンド申請'} disabled={sent}
-              onPress={() => { update((d) => { d.conn.sentTo.push(pid); }); toast('フレンド申請を送りました'); }} />
-          )}>
+          <WhoCard p={p} right={right}>
             <Row gap={6}><Note>アプリID</Note><Txt size={14} weight="bold">{p.appId}</Txt></Row>
             <Trust value={p.trust} />
           </WhoCard>
@@ -460,13 +484,18 @@ export function PersonScreen({ id }: { id?: string }) {
           <TimesCard times={p.times} region={p.region} />
         </>}
         right={<>
-          <Block title="ゲーム">{p.games.map((g) => <GameCard key={g.tag} g={g} />)}</Block>
+          <Block title="ゲーム">{p.games.length
+            ? p.games.map((g) => <GameCard key={g.tag} g={g} coverUrl={coverUrlOf?.(g)} />)
+            : <Card><Empty title="ゲームはまだ入っていません" text="" /></Card>}</Block>
           <Block title="趣味">
-            <Card>{p.hobbies.map((h, i) => <View key={h.name}>{i > 0 ? <Divider /> : null}<HobbyRow name={h.name} heat={h.heat} /></View>)}</Card>
+            <Card>{p.hobbies.length
+              ? p.hobbies.map((h, i) => <View key={h.name}>{i > 0 ? <Divider /> : null}<HobbyRow name={h.name} heat={h.heat} /></View>)
+              : <Empty title="趣味はまだ入っていません" text="" />}</Card>
           </Block>
           <Block title="好きなもの">
-            <Card pad><Row gap={6} wrap>{p.likes.filter((l) => !l.locked).map((l) =>
-              <Chip key={l.name} label={l.name} common={me.likes.some((m) => m.name === l.name)} />)}</Row></Card>
+            <Card pad>{likes.length
+              ? <Row gap={6} wrap>{likes.map((l) => <Chip key={l.name} label={l.name} locked={l.locked} common={me.likes.some((m) => m.name === l.name)} />)}</Row>
+              : <Note>好きなものはまだ入っていません</Note>}</Card>
           </Block>
         </>}
       />
